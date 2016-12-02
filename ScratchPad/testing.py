@@ -9,8 +9,11 @@ import os, ctypes, tkinter
 import requests, json
 import csv
 
-def today():
-    today = datetime.datetime.now()
-    return today.strftime('%Y-%m-%d')
-
-print(today())
+tagObj = {}
+vals = []
+value = "Mytags"
+vals.append(value)
+tagObj['Tags'] = vals
+print(tagObj)
+    
+    

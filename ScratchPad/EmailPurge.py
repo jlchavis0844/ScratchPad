@@ -27,10 +27,10 @@ def getToken():
         root = tkinter.Tk()  # where to open
         root.withdraw()
         #withdraw()  # hide Frame
-        path = tkinter.filedialog.askopenfilename(**FILEOPENOPTIONS)  # choose a file
+        path = filedialog.askopenfilename(**FILEOPENOPTIONS)  # choose a file
     if(path == ""):
         ctypes.windll.user32.MessageBoxW(0, "No file was chosen, quiting", "Token File", 0)
-        exit()
+        exit("No file picked by user")
     
     file =  open(path, 'r', encoding="utf8")
     token = file.read()

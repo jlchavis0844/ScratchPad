@@ -130,6 +130,8 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         data = {}  # holds the data object for the json
         custom_fields = {}  # custom fields JSON obect
         address = {}  # the address json object
+        tagVal = [] # the array to put into data as an array of tags
+        
         data["email"] = row[0]  # each column is mapped to a json object 
         data["source_id"] = getSource(row[1])
         custom_fields["Our Region"] = row[2]
@@ -169,7 +171,10 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         custom_fields["Client ID"] = row[37]
         custom_fields["Agent ID"] = row[38]
         custom_fields["Response Note"] = row[39]
-
+        tagVal.append(row[40]) # read in value of tag ( for not just one value)
+        data['tags'] = tagVal # write array to json field data : {...'tags' : ['value']...}
+        
+        
         temp = {}  # holds values that are not ""
         for x in data:  # go through data object
             if(data[x] != ""):  # only copy the non-"" values
@@ -255,4 +260,4 @@ if(mergeCount > 0):  # if merges were detected
         for merge in merged:  # write the merges to the merge CSV
             w.writerow(merge)
         
-input("press any key to continue") # pause at the end of running the program to allow for reading
+input("press any key to continue\n>>> ") # pause at the end of running the program to allow for reading
