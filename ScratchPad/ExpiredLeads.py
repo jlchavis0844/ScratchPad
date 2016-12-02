@@ -67,7 +67,9 @@ def today():
 
 def getToken():
     path = ""
-    if(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + "\\noe\\token")):
+    if(os.path.isfile("C:\\Apps\\NiceOffice\\token")):
+        path = "C:\\Apps\\NiceOffice\\token"
+    elif(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + "\\noe\\token")):
         path = "\\\\" + os.environ['COMPUTERNAME'] + "\\noe\\token"
     elif(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + "\\NiceOffice\\token")):
         path = "\\\\" + os.environ['COMPUTERNAME'] + "\\NiceOffice\\token"
@@ -92,7 +94,7 @@ def getToken():
 time = datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S')  # get timestamp for the log writing.
 path = os.path.dirname(__file__)  # get current path
 file = open(path + '\\logs\\aLeadExpire' + time + '.txt', 'w+')  # create and open the log file for this session
-token = "5bbddd26f6610378ef1c848952fd461e5c60bf55d609699ec3b28eb571bb3da7"
+token = getToken()
 #url = "https://api.getbase.com/v2/leads?page=1&per_page="+PER_PAGE+"&owner_id=959081"
 url = "https://api.getbase.com/v2/leads?page=1&per_page="+PER_PAGE+"&custom_fields[StatusChange]=" + getLimitDate(limDays)
 # qString = {"page": "1", "per_page" : "100"} # build API params
