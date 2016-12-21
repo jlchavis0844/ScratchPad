@@ -1,6 +1,10 @@
 '''
 Created on Nov 11, 2016
+Added token file implementation
+Added Tag reading on column 41 , row[40] - 12/7/2016
+Added error check to skip empty rows. - 12/21/2016
 
+TODO: Fix tagging error, JSON format problem?
 @author: jchavis
 '''
 
@@ -171,23 +175,31 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         custom_fields["Client ID"] = row[37]
         custom_fields["Agent ID"] = row[38]
         custom_fields["Response Note"] = row[39]
-        tagVal.append(row[40]) # read in value of tag ( for not just one value)
-        data['tags'] = tagVal # write array to json field data : {...'tags' : ['value']...}
         
+        # add the tags as a JSON array and upserting seems to clear all Tags for some reason
+        #TODO: fix tag JSON array not working on upsert
+        if(row[40] != "" or row[40] is None):
+            tagVal.append(row[40]) # read in value of tag ( for not just one value)
+            data['tags'] = tagVal # write array to json field data : {...'tags' : ['value']...}
+        
+        #------------------------------------Check for empty rows--------------------------------------
+        # if a lead does not have a first and a list name, count this as a blank row and skip
+        if('first_name' not in data or 'last_name' not in data):
+            continue
         
         temp = {}  # holds values that are not ""
         for x in data:  # go through data object
             if(data[x] != ""):  # only copy the non-"" values
                 temp[x] = data[x]
         
-        data = temp
+        data = temp #write the non-blank values to the data list so temp is new data
         
-        temp = {}  # repeat above process
-        for x in custom_fields:
-            if(custom_fields[x] != ""):
-                temp[x] = custom_fields[x]
+        temp = {}  # repeat above process of copying all the non-blank values to temp
+        for x in custom_fields:#go through the whole loop
+            if(custom_fields[x] != ""):#if not blank
+                temp[x] = custom_fields[x]# copy to temp
         
-        custom_fields = temp
+        custom_fields = temp# add to custom_fields which is a list that will be added to data list
         
         temp = {}  # repeat above process
         for x in address:
@@ -196,32 +208,33 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         address = temp
         
         # add the address and custom fields object to the data json object
-        if(len(custom_fields) != 0):
+        if(len(custom_fields) != 0):# add only if the lists are not empty
             data["custom_fields"] = custom_fields
             
         if(len(address) != 0): # check and add address if not empty( No address:{})
             data["address"] = address
             
-        payload["data"] = data
-        file.write(json.dumps(payload) + '\n')
-        print(json.dumps(payload, indent=4))
+        payload["data"] = data # write the data to the payload list
+        file.write(json.dumps(payload) + '\n') # write the JSON to the log file for record keeping
+        print(json.dumps(payload, indent=4))# display JSON that was just written
 
+        #build header for API call
         headers = {'Accept': 'application/json',
                  'Content-Type': 'application/json',
                  'Authorization': 'Bearer ' + token}
-
+        
         url = ""  # decide how the leads will merge on upsert if needed
-        if "Worksite" in custom_fields and "District" in custom_fields:  # if worksite is not empty
+        if "Worksite" in custom_fields and "District" in custom_fields:  # if Worksite is not empty
             url = "https://api.getbase.com/v2/leads/upsert?first_name=" + data["first_name"] + "&last_name="\
             + data["last_name"] + "&custom_fields[District]=" + custom_fields["District"] + "&custom_fields[Worksite]="\
             + custom_fields["Worksite"]
         elif "Worksite" in custom_fields:# if there is no district but there is a worksite 
             url = "https://api.getbase.com/v2/leads/upsert?first_name=" + data["first_name"] + "&last_name="\
             + data["last_name"] + "&custom_fields[Worksite]=" + custom_fields["Worksite"]
-        elif "District" in custom_fields.keys():  # if worksite is empty, but not distric
+        elif "District" in custom_fields.keys():  # if Worksite is empty, but not district
             url = "https://api.getbase.com/v2/leads/upsert?first_name=" + data["first_name"] + "&last_name="\
             + data["last_name"] + "&custom_fields[District]=" + custom_fields["District"]
-        else:  # if worksite and district is empty, just first and last name
+        else:  # if Worksite and district is empty, just first and last name
             url = "https://api.getbase.com/v2/leads/upsert?first_name=" + data["first_name"] + "&last_name="\
             + data["last_name"]
             
@@ -244,7 +257,7 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
             thisMerge['Last'] = response_json['data']['last_name']
             print(list(thisMerge.keys()))
             print(list(thisMerge.values()))
-                   
+            print("********************END MERGE DATA**********************\n")
             merged.append(thisMerge)  # add to merged list
             
 # write merged to the log file
@@ -254,10 +267,11 @@ for item in merged:
 
 # make a special CSV of the merges 
 if(mergeCount > 0):  # if merges were detected
+    print
     with open(os.getcwd() + '\\mergeReport_' + time + '.csv', 'w') as f:  # open csv
         w = csv.DictWriter(f, merged[0].keys(), lineterminator='\n')  # make writer
         w.writeheader()  # write header row
         for merge in merged:  # write the merges to the merge CSV
             w.writerow(merge)
         
-input("press any key to continue\n>>> ") # pause at the end of running the program to allow for reading
+input("press Enter key to continue") # pause at the end of running the program to allow for reading
