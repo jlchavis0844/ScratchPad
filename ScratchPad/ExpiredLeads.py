@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 '''
 Created on Nov 16, 2016
-
+Add comments and verified some small logic changes - 12/22/2016
+added partial unirest call for multithreading - 12/22/2016
 @author: jchavis
 '''
 import datetime  # for comparing time stamps
 import os, ctypes, tkinter
 import requests, json
 import csv
-import grequests
+import unirest
+#import grequests # can't use because of dependency failing
 
-PER_PAGE = str(100)
-limDays = 30
+PER_PAGE = str(100) # how many results should be returned at one time
+limDays = 30 # The amount of days the leads should flip after
 
 owners = {
     "Robert Lotter"  :768466, "Christa Colton"  :770197, "Steven Chow"  :770199, "Sheila Tedtaotao"  :770211,
@@ -34,58 +36,70 @@ sources = {"Direct Mail" : 118573, "Telemarketing" : 118574, "TDS Compliance Cli
            "TDS Customer" : 396033
            }
 
+#this is meant to be the call back function for an sync unirest call
+def callback_function(response):
+    print(response.raw_body())
 
+
+
+#This method is for debugging purposes
 def printResponse(response):
     print(response.status_code)
     print(response.text)
     
-
-def getOwnerName(id):
+#given the id(value), return the name (key)
+def getOwnerName(val):
     for key, value in owners:
-        if(value == id):
+        if(value == val):
             return key
     
     return "Not Found"
 
-def getSourceName(id):
+# given the id, get the source name
+def getSourceName(val):
     for key, value in sources:
-        if(value == id):
+        if(value == val):
             return key
     
     return "Not Found"
 
 # get date from numOfDays ago, positive=past, negative=future
 def getLimitDate(numOfDays):
-    today = datetime.datetime.now()
-    dd = datetime.timedelta(days=numOfDays)
-    limit = today - dd
-    return limit.strftime('%Y-%m-%d')
+    today = datetime.datetime.now() # Today
+    dd = datetime.timedelta(days=numOfDays) # for the arithmetic process
+    limit = today - dd # the result of the subtraction
+    return limit.strftime('%Y-%m-%d') # format the return
 
+# returns todays date in the standard Yyyy-mm-dd format
 def today():
     today = datetime.datetime.now()
     return today.strftime('%Y-%m-%d')
 
+# this method will attempt to find a file containing the API token
 def getToken():
     path = ""
-    if(os.path.isfile("C:\\Apps\\NiceOffice\\token")):
+    if(os.path.isfile("C:\\Apps\\NiceOffice\\token")): # search the C:\Apps folder
         path = "C:\\Apps\\NiceOffice\\token"
-    elif(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + "\\noe\\token")):
+    elif(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + "\\noe\\token")): # search the network shared NOE folder
         path = "\\\\" + os.environ['COMPUTERNAME'] + "\\noe\\token"
-    elif(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + "\\NiceOffice\\token")):
+    elif(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + "\\NiceOffice\\token")): # search the OTHER network NOE location
         path = "\\\\" + os.environ['COMPUTERNAME'] + "\\NiceOffice\\token"
-    else:
+    else: # if the token is not found in another location, ask the user to find it
         ctypes.windll.user32.MessageBoxW(0, "A token file was not found in your NOE folder, please choose the token file", "Token File", 0)
         FILEOPENOPTIONS = dict(filetypes=[('TOKEN file', '*.*')], title=['Choose token file'])
         root = tkinter.Tk()  # where to open
         root.withdraw()
         # withdraw()  # hide Frame
         path = tkinter.filedialog.askopenfilename(**FILEOPENOPTIONS)  # choose a file
-    if(path == ""):
+    if(path == ""): # if not path was chosen, quit
         ctypes.windll.user32.MessageBoxW(0, "No file was chosen, quiting", "Token File", 0)
         exit()
     
+    # read in the token from the file and return the token as a string
     file = open(path, 'r', encoding="utf8")
     token = file.read()
+    if(len(token) == 0): # if no text was converted
+        print('******************************Warning, token file is empty')
     file.close()
     # print(token)
     return token
@@ -107,77 +121,82 @@ headers = {  # headers for the HTTP calls
 
 results = []
 stop = False
-count = 1
+count = 1 # will track the page count, start on page 1
 while(stop == False):
     # send the HTTP call and store result in response
     response = requests.request("GET", url, data=payload, headers=headers)
     data = json.loads(response.text)  # load response as a json
-    returned = data['meta']['count']
+    returned = data['meta']['count'] # how many results
 
-    for record in data['items']:
+    for record in data['items']: # write results to list
         results.append(record)
 
-    if(returned == PER_PAGE):
-        url = data['meta']['links']['next_page']
+    if(returned == PER_PAGE): # if the returned is equal to the max, there is another page
+        url = data['meta']['links']['next_page'] # load the next page which is given as part of the return message from Base
     else:
         stop = True
         
     print("loop: " + str(count) + '\t' + " returned: " + str(returned))
     print("next page: " + url)
-    count += 1
+    count += 1 # increase count, not needed
     
 print("total results: " + str(len(results)))
-file.write("total results: " + str(len(results)) + '\n')
-rows = []
-header = []
+file.write("total results: " + str(len(results)) + '\n') # write to the log file the number of results
+rows = [] # holds a record
+header = [] # holds column names (keys)
 
-# w = csv.DictWriter(f,lineterminator='\n')  # make writer
+#go through all results
 for res in results:
     temp = {}
     data = res['data']
-    for key in data.keys():
-        if(key == 'address'):
+    for key in data.keys(): # go through record fields
+        if(key == 'address'): # find address and treat as a seperate list
             for subkey in data[key]:
                 temp[subkey] = data[key][subkey]
-        elif(key == 'custom_fields'):
+        elif(key == 'custom_fields'): # if this is a custom field, load in seperate list
             for subkey in data[key]:
                 temp[subkey] = data[key][subkey]
-        elif(key == 'tags'):
+        elif(key == 'tags'):# tags are loaded into an array
             for x in range(len(data[key])):
                 temp[('tag' + str(x))] = data[key][x]
-        else:
+        else: # if it isn't a special or custom field, add it to main list
             temp[key] = data[key]
 
-                    
+    # here the record is now complete, add the row
     rows.append(temp)  # add to total responses
-    for colName in temp:
+    
+    for colName in temp:# check to see if the column name has been added yet 
         if(colName not in header):
             #print("adding header: " + colName)
-            header.append(colName)
-file.write("Header row: " + '\n')
-file.write(str(header) + '\n')
-             
+            header.append(colName) # if the column name hasn't been added to the list yet, append it
+            
+file.write("Header row: " + '\n') # write to the log the header row
+file.write(str(header) + '\n') # the actual row
+
+#now we will write the results to the CSV file.
 f = open(os.getcwd() + '\\expired_' + time + '.csv', 'w', encoding='UTF-8') # open csv
 w = csv.DictWriter(f, header, lineterminator='\n')  # make writer
 w.writeheader()  # write header row
-w.writerows(rows)
-f.close()
+w.writerows(rows) # write ALL the records as CSV rows
+f.close()  # cl;ose the file after writing
 file.write("finished writing to " + os.getcwd() + '\\expired_' + time + '.csv' + '\n')
 
-AtoB = []
-BtoA = []
-others = []
-async_list = []
+AtoB = [] # holds leads that are moving from a to b
+BtoA = [] # holds the leads that moving from b to a
+others = [] # problem children
+async_list = [] # not used
 
-for row in rows:
+# for each result
+for row in rows: # we will now toggle from a to b or b to a
     if(row['New Lead Type'] == "TDS-A Lead" or row['New Lead Type'] == "A Lead"):
         AtoB.append(row)
     elif(row['New Lead Type'] == "B Lead"):
         BtoA.append(row)
-    else:
+    else: # if this lead is neither a TDS-A nor B lead, dump it here
         others.append(row)
-if(len(others) > 0):
-    file.write("***********************************WARNING************************************" + '\n')
+        
+if(len(others) > 0): # well, poop. Some leads were not TDS-A or B leads. What are we going to do with them?
+    file.write("***********************************WARNING************************************" + '\n') # write them to the log!
     file.write("The following leads were not either A or B leads" + '\n')
     for row in others:
         info = "id: " + str(row['id']) + ", Name: " + row['first_name'] + " " + row['last_name']
@@ -186,27 +205,28 @@ if(len(others) > 0):
         print("Other: " + info + '\n')
     file.write("*****************************************************************************" + '\n')
     
-if(len(AtoB) > 0):   
+if(len(AtoB) > 0): # let's do the old switchero
     for row in AtoB:
         url = "https://api.getbase.com/v2/leads/" + str(row['id'])
-        payload = {
+        payload = { # here we load the body of the put request
                     "data": {
                         "custom_fields": {
-                            "New Lead Type": "B Lead",
+                            "New Lead Type": "B Lead", # change to a B lead
                             "StatusChange" :  today()},
-                            "status": "Unqualified"
+                            "status": "Unqualified" # mark as unqualified
                             }
                    }
         # note: unable to install grequests and money patching due to machine limits
         # these should be async calls
-        response = requests.request("PUT", url, data=json.dumps(payload), headers=headers)
-        printResponse(response)
+        #TODO: Make this section async. Use futures and call backs. Fix it up something real nice like............
+        response = requests.request("PUT", url, data=json.dumps(payload), headers=headers) # make the API call
+        printResponse(response) # show the response
         file.write("response code: " + response.status_code + '\n')
         
-if(len(BtoA) > 0):   
+if(len(BtoA) > 0): # switching from B leads to A leads
     for row in BtoA:
         url = "https://api.getbase.com/v2/leads/" + str(row['id'])
-        payload = {
+        payload = { # to body to essentially undo what we did above
                     "data": {
                         "custom_fields": {
                             "New Lead Type": "TDS-A Lead",
@@ -214,8 +234,10 @@ if(len(BtoA) > 0):
                             "status": "Available"
                             }
                    }
-        response = requests.request("PUT", url, data=json.dumps(payload), headers=headers)
-        printResponse(response)
+        #TODO: Make these async calls using grequests or unirest
+        #response = unirest.put(url, params = json.dumps(payload), headers = headers, callback = callback_function)
+        response = requests.request("PUT", url, data=json.dumps(payload), headers=headers) # make the API calls
+        #printResponse(response)
         file.write("response code: " + response.status_code + '\n')
         
-file.close()
+file.close() #eexit the program

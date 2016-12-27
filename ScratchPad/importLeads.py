@@ -1,8 +1,9 @@
 '''
 Created on Nov 11, 2016
 Added token file implementation
+Added Local token, checks C:\Apps before doing to the network
 Added Tag reading on column 41 , row[40] - 12/7/2016
-Added error check to skip empty rows. - 12/21/2016
+Added error check to skip empty rows, better comments - 12/21/2016
 
 TODO: Fix tagging error, JSON format problem?
 @author: jchavis
@@ -130,9 +131,9 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         if(rowCntr == 0):  # skip row 0, we don't need the header names
             continue;  # goes to top of the loop
         
-        payload = {}  # will hold the reqests payload
+        payload = {}  # will hold the requests payload
         data = {}  # holds the data object for the json
-        custom_fields = {}  # custom fields JSON obect
+        custom_fields = {}  # custom fields JSON object
         address = {}  # the address json object
         tagVal = [] # the array to put into data as an array of tags
         

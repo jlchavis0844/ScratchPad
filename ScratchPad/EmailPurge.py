@@ -118,4 +118,5 @@ for currID in idList:# for every resource with missing@email.com
     response = requests.request("PUT", url, headers=headers, data = json.dumps(payload), verify = True) #make Call
     file.write("\t result for " + str(currID) + " " + response.text + "\n")#Write response to log
     done += 1 # increase loop count
-    print("#" + str(done) + "\tBaseID: " + str(currID) + "\tResponse Code: " + str(response.status_code))#print line to console.    
+    print("#" + str(done) + "\tBaseID: " + str(currID) + "\tResponse Code: " + str(response.status_code))#print line to console.
+#input("Press Enter to continue")
