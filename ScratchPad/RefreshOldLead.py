@@ -71,7 +71,7 @@ def setPath():
     global csv_path, master
     FILEOPENOPTIONS = dict(defaultextension='.csv', filetypes=[('CSV file', '*.csv'), ('All files', '*.*')])#options
     csv_path = fd.askopenfilename(**FILEOPENOPTIONS)  # choose a file
-    tkinter.Label(master, text=csv_path).grid(row=0, column=1) # show user the path they have picked
+    csv_text.set(csv_path)
     errorMsg.set("") # clear and user error message and proper path loading
     return # go back
 
@@ -166,14 +166,19 @@ logPath.set(os.path.dirname(__file__) + '\\logs\\' ) # get current path
 if args.logdir != None and args.logdir != "":
     logPath.set(args.logdir.replace('"','\\'))
     print('log path set to ' + logPath.get())
-    
+
+csv_text = tkinter.StringVar(master)
+csv_text.set("<----- choose input file")
 csv_path = "" # empty file path
 if args.file != None and args.file != "":
     csv_path = args.file
+    csv_text.set(csv_path)
     print('csv path set to ' + csv_path)
     
 errorMsg = tkinter.StringVar(master) # make a message for the error label
 errorMsg.set("") #  set error message blank until there is an actual error
+
+
     
 master.title("Enter owner's full name") # pretty title
 master.iconbitmap(iconPath) # set icon
@@ -193,14 +198,16 @@ else:
     # lets build the labels 
     l1 = tkinter.Label(master, text="Enter name of new owner").grid(row=1, column=1, sticky=tkinter.W, pady=4, padx=4) # add a label for the owner box
     l2 = tkinter.Label(master, textvariable=logPath).grid(row=2, column=1, sticky=tkinter.W, pady=4, padx=4) # label for the log path
-    errorLabel = tkinter.Label(master, textvariable=errorMsg, fg="red", font = "Helvetica 12 bold italic").grid(row=4, sticky=tkinter.W, pady=4, padx=4) # error message label
+    l3 = tkinter.Label(master, textvariable=csv_text).grid(row=0, column=1, sticky=tkinter.W, pady=4, padx=4) # csv file path label
+    errorLabel = tkinter.Label(master, textvariable=errorMsg, fg="red", font = "Helvetica 12 bold italic", width=20) \
+        .grid(row=4, sticky=tkinter.W, pady=4, padx=4) # error message label
     
     # lets build the objects
-    o1 = tkinter.OptionMenu(master, ownerVar, *newOwnerList).grid(row=1, column=0, sticky=tkinter.W, pady=4, padx=4)  # drop down list of owners, note list pointer
-    b1 = tkinter.Button(master, text="Run the Program", font="Helvetica 12 bold italic", command=getOwner).grid(row=3, column=0,sticky=tkinter.W, pady=4, padx=4) # add a single button to the popup
-    b2 = tkinter.Button(master, text="Choose CSV File", command=setPath).grid(row=0, column=0, sticky=tkinter.W, pady=4, padx=4) # use to pick the buttom
-    b3 = tkinter.Button(master, text="Change Log Path", command=setLog).grid(row=2, column=0, sticky=tkinter.W, pady=4, padx=4) # used to change the default log path
-    exitBtn = tkinter.Button(master, text="Close", font="Helvetica 12 bold italic", command=master.quit).grid(row=3, column=1, sticky=tkinter.W, pady=4, padx=4) # quits the program
+    o1 = tkinter.OptionMenu(master, ownerVar, *newOwnerList).grid(row=1, column=0, sticky="ew", pady=4, padx=4)  # drop down list of owners, note list pointer
+    b1 = tkinter.Button(master, text="Run the Program", font="Helvetica 12 bold italic", command=getOwner, width=20).grid(row=3, column=0,sticky="ew", pady=4, padx=4) # add a single button to the popup
+    b2 = tkinter.Button(master, text="Choose CSV File", command=setPath, width=20).grid(row=0, column=0, sticky="ew", pady=4, padx=4) # use to pick the buttom
+    b3 = tkinter.Button(master, text="Change Log Path", command=setLog, width=20).grid(row=2, column=0, sticky="ew", pady=4, padx=4) # used to change the default log path
+    exitBtn = tkinter.Button(master, text="Close", font="Helvetica 12 bold italic", command=master.quit, width=20).grid(row=3, column=1, sticky="ew", pady=4, padx=4) # quits the program
     #start the GUI
     tkinter.mainloop() # start the window thread
 
