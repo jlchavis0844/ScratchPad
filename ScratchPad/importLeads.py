@@ -137,48 +137,50 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         address = {}  # the address json object
         tagVal = [] # the array to put into data as an array of tags
         
-        data["email"] = row[0]  # each column is mapped to a json object 
+        #Lets load the CSV values into JSON objects data, address, or custom
+        data["email"] = row[10]  # each column is mapped to a json object 
         data["source_id"] = getSource(row[1])
-        custom_fields["Our Region"] = row[2]
-        custom_fields["TDS"] = row[3]
-        custom_fields["Territory"] = row[4]
-        data["owner_id"] = getOwner(row[5])
-        data["first_name"] = row[6]
-        data["last_name"] = row[7]
-        address["line1"] = row[8]
-        address["city"] = row[9]
-        address["postal_code"] = row[11]
-        custom_fields["Home Phone"] = row[12]
-        data["mobile"] = row[13]
-        custom_fields["NDNC"] = row[14]
-        custom_fields["NDNC HmPhone"] = row[15]
-        custom_fields["NDNC ExpDate"] = row[16]
-        custom_fields["Worksite"] = row[17]
-        custom_fields["Worksite Phone"] = row[18]
-        custom_fields["Worksite Email"] = row[19]
-        custom_fields["District"] = row[20]
-        custom_fields["District Phone"] = row[21]
-        custom_fields["Alt Phone"] = row[22]
-        custom_fields["Business Phone"] = row[23]
-        custom_fields["Business Phone Ext"] = row[24]
-        custom_fields["DOB"] = row[25]
-        custom_fields["Gender"] = row[26]
-        custom_fields["Annual Salary"] = row[27]
-        custom_fields["YrsPERS"] = row[28]
-        custom_fields["YrsSTRS"] = row[29]
-        custom_fields["Planned Retire"] = row[30]
-        custom_fields["Beneficiary"] = row[31]
-        custom_fields["Beneficiary DOB"] = row[32]
-        custom_fields["Spouse Name"] = row[33]
-        custom_fields["Mktg ID"] = row[34]
-        custom_fields["New Lead Type"] = row[35]
+        custom_fields["Our Region"] = row[35]
+        custom_fields["TDS"] = row[34]
+        custom_fields["Territory"] = row[11]
+        data["owner_id"] = getOwner(row[0])
+        data["first_name"] = row[2]
+        data["last_name"] = row[3]
+        address["line1"] = row[4]
+        address["city"] = row[5]
+        address["state"] = row[6]
+        address["postal_code"] = row[7]
+        custom_fields["Home Phone"] = row[8]
+        data["mobile"] = row[9]
+        custom_fields["NDNC"] = row[12]
+        custom_fields["NDNC HmPhone"] = row[13]
+        custom_fields["NDNC ExpDate"] = row[14]
+        custom_fields["Worksite"] = row[15]
+        custom_fields["Worksite Phone"] = row[16]
+        custom_fields["Worksite Email"] = row[17]
+        custom_fields["District"] = row[18]
+        custom_fields["District Phone"] = row[19]
+        custom_fields["Alt Phone"] = row[20]
+        custom_fields["Business Phone"] = row[21]
+        custom_fields["Business Phone Ext"] = row[22]
+        custom_fields["DOB"] = row[23]
+        custom_fields["Gender"] = row[24]
+        custom_fields["Annual Salary"] = row[25]
+        custom_fields["YrsPERS"] = row[26]
+        custom_fields["YrsSTRS"] = row[27]
+        custom_fields["Planned Retire"] = row[28]
+        custom_fields["Beneficiary"] = row[29]
+        custom_fields["Beneficiary DOB"] = row[30]
+        custom_fields["Spouse Name"] = row[31]
+        custom_fields["Mktg ID"] = row[32]
+        custom_fields["New Lead Type"] = row[33]
         custom_fields["New Section"] = row[36]
         custom_fields["Client ID"] = row[37]
         custom_fields["Agent ID"] = row[38]
         custom_fields["Response Note"] = row[39]
         
         # add the tags as a JSON array and upserting seems to clear all Tags for some reason
-        #TODO: fix tag JSON array not working on upsert
+        #TODO: fix tag JSON array not working on upsert, implement tag update script logic using import tagUpdate
         if(row[40] != "" or row[40] is None):
             tagVal.append(row[40]) # read in value of tag ( for not just one value)
             data['tags'] = tagVal # write array to json field data : {...'tags' : ['value']...}

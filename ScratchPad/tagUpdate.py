@@ -51,9 +51,9 @@ def getToken():
 
 def writeAndQuit(response, log):
     log.write(response.text)
-    print('received status code: ' + str(response.status_code) + '\n quitting')
-    log.close()
-    exit(response.status_code)
+    print('ERROR: received status code: ' + str(response.status_code) + '\n')
+    #log.close()
+    #exit(response.status_code)
     
 #case insensitive check of all the current api tags with the current tag. If match is found, true, false otherwise
 def duplicateTagCheck(APItags, currTag):
@@ -106,14 +106,14 @@ with open(csv_path, encoding="utf8", newline='', errors = 'ignore') as csvfile: 
             continue;  # goes to top of the loop
         
         #Let's start each row by loading in their current tags from the internet
-        url = baseURL + row[0] + '/' +  row[1]
+        url = (baseURL + row[0] + '/' +  row[1]).lower()
         #response = unirest.get(url, headers = headers, params = "",  callback = callBack_function) # send it
         response = requests.get(url=url, headers=headers, data="", verify=True)
         
         #something bad happened, lets give up
         if(response.status_code != 200):
             writeAndQuit(response, file)
-            
+            continue
         response_json = json.loads(response.text) # make a json of the response
         APItags = str(response_json['data']['tags']) # pull out the tags
         print('found the following tags online: ' + str(APItags))
@@ -167,9 +167,11 @@ with open(csv_path, encoding="utf8", newline='', errors = 'ignore') as csvfile: 
         response_json = json.loads(response.text)
         
         file.write("for " + row[0] + " , response code: " + str(response.status_code) + '\n')
-        file.write('verified tags: ' + str(response_json['data']['tags']) + '\n')
+        file.write('verified tags: ' + str(response_json['data']['tags']) + '\nDone with #' + str(rowCntr) + '\n')
         
         print("********************for " + row[1] + " , response code: " + str(response.status_code) + "********************")
+        print("Done with " + row[0].replace('s', '') + " #" + str(rowCntr) + '\n')
+        
 print("Goodbye!")
 file.close()
         

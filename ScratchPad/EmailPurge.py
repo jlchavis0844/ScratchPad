@@ -8,12 +8,13 @@ This script will connect to base, and scrape a list of all resources that have "
 listed as their email address. The script will then null their email field.
 '''
 
-import requests #for API connections  
-import json #for the payloads
-import datetime #log timestamping
-import sys, os, ctypes, tkinter # reading in commandline args
+# import requests #for API connections  
+# import json #for the payloads
+# import datetime #log timestamping
+# import sys, os, ctypes, tkinter # reading in commandline args
+# from tkinter import filedialog
+import requests, json, datetime, sys,os,ctypes, tkinter
 from tkinter import filedialog
-#from requests.api import request # duplicate
 
 def getToken():
     path = ""
@@ -119,4 +120,4 @@ for currID in idList:# for every resource with missing@email.com
     file.write("\t result for " + str(currID) + " " + response.text + "\n")#Write response to log
     done += 1 # increase loop count
     print("#" + str(done) + "\tBaseID: " + str(currID) + "\tResponse Code: " + str(response.status_code))#print line to console.
-#input("Press Enter to continue")
+input("Press Enter to continue")
