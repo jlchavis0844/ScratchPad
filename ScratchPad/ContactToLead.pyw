@@ -469,7 +469,7 @@ for currID in oldBaseIDs:
             errorMsg.set("Working:" + "{0:.2f}".format((finished/ len(oldBaseIDs))*100) + "% Done, Remaining(h:m:s): " + remaining)
             master.update()
             print("Working:" + "{0:.2f}".format((finished/ len(oldBaseIDs))*100) + "% Done, Remaining(h:m:s): " + remaining)
-            print('\nDone with lead ' + Str(currID) + '--------------------------------------------------------------\n\n' )
+            print('\nDone with lead ' + str(currID) + '--------------------------------------------------------\n\n' )
         
 print("Passed: " + str(passed) + '\n')
 print("failed: " + str(failed) + '\n')
