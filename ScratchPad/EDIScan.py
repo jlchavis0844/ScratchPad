@@ -29,6 +29,27 @@ def checkNum(line, start, stop):
         return True
     except ValueError:
         return False
+    
+'''
+A simple function that returns whether the given substring can be 
+converted into a valid phone number. Check num doesn't work since 
+phone numbers will need to replace "-".
+@param line - String of the text we will be taking the substring 
+from
+@param start - int of the first char to start the substring 
+(inclusive)
+@param stop - int of the char to stop the subdivision of the 
+substring (exclusive)
+@return boolean on whether the substring can be converted 
+'''
+def checkPhone(line, start, stop):
+    try:
+        testNum = line[start:stop].strip().replace("-","") 
+        if testNum != "":
+            int(testNum)
+        return True
+    except ValueError:
+        return False
 
 '''
 A function that attempts to convert a substring into a date in 
@@ -266,7 +287,7 @@ for line in content:
             "\" is not a valid termination date\n")
         errors += 1
         
-    if not checkNum(line, 154, 166):
+    if not checkPhone(line, 154, 166):
         print('line ' + str(cntr) + " \"" + line[154:166] + 
             "\" is not a valid Home Phone")
         file.write('line ' + str(cntr) + " \"" + line[154:166] + 
