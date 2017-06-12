@@ -39,23 +39,7 @@ import tkinter.filedialog as fd  # for picking the file
 import tkinter
 #import grequests # can't use because of dependency failing
 
-owners = {    # this is the hard coded list of all currently active base users
-    "Steven Chow" : 770199,    "David Barto" : 774967,    "Kristi Breiten" : 775616, "Chris Coventry" : 775618,
-    "David Coventry" : 775619,    "Rachel Lane" : 775621,    "Darren Hulbert" : 775625, "Kusuma Suharto" : 775633,
-    "Joyce Lavin" : 775768,    "Chuck Major" : 783519,    "Paul Bruil" : 799111, "Duane Kelley" : 813489,
-    "Frank McDermott" : 813490,    "newbusiness@ralotter.com" : 828713, "Jonathan Pace" : 940653, "Dominic Fama" : 973096,
-    "Horacio Rojas" : 977350, "Brian Mendenhall" : 977351, "Troy Mathis" : 1000138, "Katherine Seach" : 1000169,
-    "Russ Okuma" : 1045964, "Antony Kettering" : 1063420, "William Erler" : 1063422, "Chanthol Pong " : 1084892,
-    "Xavier Cervantes-Luna" : 1084893, "Steve Chow" : 1084963, "Robert Lotter" : 768466, "Christa Colton" : 770197,
-    "Sheila Tedtaotao" : 770211, "Data Admin" : 770454, "Felipe Diaz" : 775617, "Chris McFarland" : 775769,
-    "Victor Leonino" : 778823, "Adrian Galvan" : 800987, "Marketing Team" : 825798, "Gina Gonzales" : 966741,
-    "James Chavis" : 991960
-}
-
-# this may be redundant, used on tkinter's option menu
-# maybe replace with *(owners.keys())
-# how do you dereference a returned dict in python
-newOwnerList = owners.keys() 
+owners = {} #loaded at start from csv during the GUI build
 
 #take care of our command line arguments
 parser = argparse.ArgumentParser(description='Handle commandline options') # build parser
@@ -65,6 +49,25 @@ parser.add_argument('--logdir', '-l', dest='logdir', help="directory to store lo
 parser.add_argument('--wait', '-w', dest='wait', help="No means the program closes after running, else, it waits for key", required=False) # wait arg
 args = parser.parse_args() # fetch args into namespace so we can call args.argName
 
+def loadOwners():
+    global owners
+    if os.path.isfile("./owners.csv"):
+        myFile = ".\\owners.csv"
+    else:
+        myFile = "\\\\nas3\\users\\jchavis\\Documents\\LeadRefreshes\\"
+        
+    with open(myFile, encoding="utf8", newline='', errors='ignore') as csvfile:
+        readCSV = csv.reader(csvfile, delimiter = ',')
+        cntr = 0
+        owners = {}
+        
+        for row in readCSV:
+            if cntr != 0:
+                owners[row[0].strip()] = int(row[1])
+                cntr += 1
+            else:
+                cntr += 1
+    return owners
 
 def setPath():
     """this function is called by the CSV path button to set the logPath variable"""
@@ -89,28 +92,18 @@ def setLog():
     return # go back
 
 
-def getOwner():
-    """this function finds the owner id for the given name and returns owner_id as an int"""
-    #declare that we will be using globals, not locals for the popup
-    global ownerID, ownerVar, master, errorMsg
-    ownerName = ownerVar.get() # get the input text
-    if(ownerName == "" or ownerName == " " or ownerName is None): # check for blanks
-        print("empty input, quiting")
-        sys.exit() # quit on this error
-    elif ownerName not in owners.keys(): #what if the name is not found?
-        print("Invalid name, update owner's list? Quitting")
-        #file.write("Invalid name, update owner's list? Quitting")
-        sys.exit() # quit on this error
-    else: # if the input is valid
-        ownerID = owners[ownerName] # get the id of the owner
-        print("setting owner # " + str(ownerID) + "(" + ownerName + ")\n") # show it
-        if csv_path == "" or csv_path is None: #check for empty path here
-            errorMsg.set("Empty CSV, choose file")
-        elif logPath.get() == "" or logPath.get() is None:
-            errorMsg.set("No Log Path")
-        else:
-            master.quit() #close and go back
-        return
+def getOwner(name):
+    global owners
+    if len(owners) == 0:
+        loadOwners()
+        #print(owners)
+        
+    if isinstance(name, int):
+        for k,v in owners.items():
+            if v == name:
+                return k
+    else :
+        return owners[name]
 
 
 def today():
@@ -150,6 +143,12 @@ def getToken():
     return token
 
 #--------------------------------------------------------START PROGRAM ---------------------------------------------------------------------#
+# this may be redundant, used on tkinter's option menu
+# maybe replace with *(owners.keys())
+# how do you dereference a returned dict in python
+newOwnerList = loadOwners().keys() 
+if newOwnerList is None:
+    print("could not load owners.csv.\nMake one like:\nName, id {with header row}")
 
 #load the token
 token = getToken()
