@@ -322,7 +322,7 @@ for line in content:
             "\" is not a valid termination date\n")
         errors += 1
         
-    if line[330] not in ('F', 'M', ''):
+    if line[330] not in ('F', 'M', 'U',''):
         print('line ' + str(cntr) + " \"" + line[330] + 
             "\" is not a valid gender")
         file.write('line ' + str(cntr) + " \"" + line[330] + 
@@ -657,6 +657,11 @@ for line in content:
     # END CANCER CHECKS****************************************************# 
 
     cntr += 1
+    
+SIZE = len(content) # get the number of rows
 print("Scan completed, there are " + str(errors) + " errors in the file")
+file.write("Scan completed, there are " + str(errors) + " errors in the file")
+print("checked a total of " + str(SIZE-2) + " records")
+file.write("checked a total of " + str(SIZE-2) + " records")
 file.close()
 input("Press Enter to continue")
