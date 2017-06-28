@@ -35,7 +35,7 @@ sources = {"Direct Mail" : 118573, "Telemarketing" : 118574, "TDS Compliance Cli
            "TDS 125 Open Enrollment" : 118952,"None" : 137256, "FHRI My Advisor Magazine" : 150539, 
            "Direct Mail Phone-In" : 150540, "Beyond" : 159032, "CareerBuilder" : 159033,"Monster" : 159034, 
            "Active Sale" : 184862, "Indeed Ad" : 277038, "Craigs List" : 284440, "Campaign Referral" : 351441,
-           "TDS Customer" : 396033
+           "TDS Customer" : 396033, "Exact Data" : 600804
            }
 
 merged = []
@@ -123,14 +123,14 @@ file.write("using CSV: " + csv_path + '\n')
 with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  # open file as UTF-8
     reader = csv.reader(csvfile, delimiter=',')  # makes the file a csv reader
     
-    print('**************************************************************************************')
+    print('**********************************************************************************')
     rowCntr = -1  # start index, will track which row the process is on
 
     for row in reader:  # iterate through each row (record)
         rowCntr += 1  # start at zero
         if(rowCntr == 0):  # skip row 0, we don't need the header names
             continue;  # goes to top of the loop
-        
+        print('starting with lead ' + str(rowCntr) + ' \t*******************')
         payload = {}  # will hold the requests payload
         data = {}  # holds the data object for the json
         custom_fields = {}  # custom fields JSON object
@@ -179,12 +179,13 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         custom_fields["Agent ID"] = row[38]
         custom_fields["Response Note"] = row[39]
         
-        # add the tags as a JSON array and upserting seems to clear all Tags for some reason
+        #add the tags as a JSON array and upserting seems to clear all Tags for some reason
         #TODO: fix tag JSON array not working on upsert, implement tag update script logic using import tagUpdate
         if(row[40] != "" or row[40] is None):
             tagVal.append(row[40]) # read in value of tag ( for not just one value)
             data['tags'] = tagVal # write array to json field data : {...'tags' : ['value']...}
         
+        data['tags'].append("Exact Data")
         #------------------------------------Check for empty rows--------------------------------------
         # if a lead does not have a first and a list name, count this as a blank row and skip
         if('first_name' not in data or 'last_name' not in data):
@@ -240,15 +241,18 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         else:  # if Worksite and district is empty, just first and last name
             url = "https://api.getbase.com/v2/leads/upsert?first_name=" + data["first_name"] + "&last_name="\
             + data["last_name"]
-            
+       
+
         file.write("URI: " + url + '\n')  # write the URI to the log file
         response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=True)  # send it
         response_json = json.loads(response.text)  # read in the response JSON
+        file.write("Finished with status code: " + str(response.status_code))
+        print("Finished with status code: " + str(response.status_code))
         created = response_json['data']['created_at']  # store the time stamp for when the lead was created
         updated = response_json['data']['updated_at']  # store the time stamp for when the lead was updated
         file.write("created: " + created + '\n')  # write the created time stamp to log
         file.write("updated: " + updated + '\n')  # write the updated time stamp to the log
-        
+         
         if(timeDiff(created, updated) > 60):  # if the created and updated are more than a minute apart
             print("****WARNING, THIS LEAD WAS MERGED*****" + '\n')
             file.write("****WARNING, THIS LEAD WAS MERGED*****" + '\n')
