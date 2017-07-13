@@ -4,7 +4,7 @@ Created on Jan 20, 2017
 @author: jchavis
 
 This module will take a CSV list of Base IDs for Leads, download the lead data, delete the 
-lead the from Base, and reimport the lead into base
+lead the from Base, and re-import the lead into base
 
 full command line support, use -h or --help for options.
     -o or --owner - name of the owner "Bob Saget"
@@ -236,6 +236,9 @@ file.write("log path set to " + logPath.get()+ '\n')
 file.write("this action is being ran by " + os.getlogin() + " on computer " + os.environ['COMPUTERNAME']+ '\n')
 file.write("command line args: " + str(args) + "\n")
 
+#lets make a csv file to track oldIDs to newIDs easily
+csvOut = open(logPath.get()+ 'Refresh-Lead-' + time + '-IDs.csv', 'w+')
+csvOut.write("oldIDs, newIDs\n") # header
 
 oldBaseIDs = [] # this will hold the id's of the A or TDS A leads
 failed = 0 # track failures
@@ -328,8 +331,13 @@ for currID in oldBaseIDs:
 
         # now we can change the info, and push it back to base as a B lead
         data['data']['owner_id'] = ownerID # set the owner to choosen ID
-        #data['data']['custom_fields']['New Lead Type'] = "B Lead" # change the lead type to B type
+        data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
         data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
+        
+        #this is for a special occasion, don't leave uncommented!!!!!!!!!!!!!!!!!!!!!!
+        del data['data']['source_id']
+        data['data']['custom_fields']['Response Note'] = ""
+        data['data']['tags'].append("Summer Audits")
         
         # delete fields that aren't used on create
         del data['meta'] # metadata about the lead
@@ -366,6 +374,7 @@ for currID in oldBaseIDs:
         data = json.loads(response.text)
         file.write(json.dumps(data, sort_keys=True, indent=4))
         file.write("\nOld Base ID: " + str(oldBaseIDs[rowCntr]) + "\tnew Base ID: " + str(data['data']['id']) + "\n")
+        csvFile.write(str(oldBaseIDs[rowCntr]) + ", " + str(data['data']['id']) + "\n")
         print("Old Base ID: " + str(oldBaseIDs[rowCntr]) + ",\tnew Base ID: " + str(data['data']['id']) + "\n")
         
         #now we recreate the notes from the old lead for the new lead
@@ -389,7 +398,8 @@ for currID in oldBaseIDs:
         file.write("\nDone with lead-------------------------------------------------------\n\n\n")
         rowCntr += 1 # ready to move to the next row
         passed += 1
-        errorMsg.set("Working..." + "{0:.2f}".format((len(passed) + len(failed))/ len(oldBaseIDs)) & "% Done" )
+        
+        errorMsg.set("Working..." + "{0:.2f}".format((passed + failed)/ len(oldBaseIDs)) + "% Done" )
         
 print("Passed: " + str(passed) + '\n')
 print("failed: " + str(failed) + '\n')
@@ -398,6 +408,7 @@ file.write("Passed: " + str(passed) + '\n')
 file.write("failed: " + str(failed) + '\n')
 file.write('done at ' + datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S'))
 file.close()
+csvOut.close()
 errorMsg.set("finished with " + str(passed) + " passed and " + str(failed) + " fails")
 if args.wait == 'no':
     input('Press enter to continue')
