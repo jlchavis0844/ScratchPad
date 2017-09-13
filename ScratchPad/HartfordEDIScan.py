@@ -410,7 +410,7 @@ def checkVCI(tokens):
         file.write("WARNING, invalid VCI CI Benefit Amount\n" + tokens[5] + '\n') 
         print("WARNING, invalid VCI CI Benefit Amount\n" + tokens[5] + '\n')
     
-    if len(tokens[7]) != 0 and tokens[7] != '1225486':
+    if len(tokens[7]) != 0 and tokens[7] != '001': #changed from 1225486 to 001 for CI & ACC
         file.write("WARNING, invalid VCI Plan Number\n" + tokens[5] + '\n') 
         print("WARNING, invalid VCI Plan Number\n" + tokens[5] + '\n')
     
@@ -455,7 +455,7 @@ def checkVAC(tokens):
         file.write("WARNING, invalid VAC Plan Option\n" + tokens[5] + '\n') 
         print("WARNING, invalid VAC Plan Option\n" + tokens[5] + '\n')
     
-    if len(tokens[7]) != 0 and tokens[7] != '1225486':
+    if len(tokens[7]) != 0 and tokens[7] != '001': #changed from 1225486 to 001 for CI & ACC
         file.write("WARNING, invalid VAC Plan Number\n" + tokens[5] + '\n') 
         print("WARNING, invalid VAC Plan Number\n" + tokens[5] + '\n')
     
