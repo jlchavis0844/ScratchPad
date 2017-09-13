@@ -226,9 +226,9 @@ if pathList[len(pathList)-1] != '\\' or pathList[len(pathList)-1] != '/':
     else:
         logPath.set(logPath.get() + '/')
 
-file = open(logPath.get() + 'Refresh-Lead-' + time + '.txt', 'w+')  # create and open the log file for this session
+file = open(logPath.get() + 'Update-Lead-' + time + '.txt', 'w+')  # create and open the log file for this session
 print("making log file " + logPath.get() + 'Refresh-Lead-' + time + '.txt')
-file.write('this log was written to ' + logPath.get() + 'Refresh-Lead-' + time + '.txt\n')
+file.write('this log was written to ' + logPath.get() + 'Update-Lead-' + time + '.txt\n')
 file.write("starting leads update at " + time + '\n')  # write to log
 file.write("using CSV: " + csv_path + '\n')
 file.write("owner is set to " + ownerVar.get()+ '\n')
@@ -325,20 +325,27 @@ for currID in oldBaseIDs:
 #             #print("found " + str(noteData['meta']['count']) + " notes\n")
 #             file.write("found " + str(noteData['meta']['count']) + " notes\n")     
         
-        file.write("found " + str(oldBaseIDs[rowCntr]) + ", deleting the lead\n") 
+        file.write("found " + str(oldBaseIDs[rowCntr]) + "\n") 
         data = json.loads(response.text) # make a json
         file.write(json.dumps(data, sort_keys=True, indent=4)) # write the json to log for safe keeping
 
         # now we can change the info, and push it back to base as a B lead
-        data['data']['owner_id'] = ownerID # set the owner to choosen ID
-        data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
-        data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
+        #data['data']['owner_id'] = ownerID # set the owner to choosen ID
+        data['data']['custom_fields']['New Lead Type'] = "B Lead" # change the lead type to B type
+        #data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
 
 #Warning!!!!!*************************************************        
         #this is for a special occasion, don't leave uncommented!!!!!!!!!!!!!!!!!!!!!!
-        del data['data']['source_id']
+        if 'source_id' in data['data'] and (['source_id'] == 118595 \
+            or data['data']['source_id'] == 118949 \
+            or data['data']['source_id'] == 1932003024):
+            data['data']['source_id'] = 0
+            
         data['data']['custom_fields']['Response Note'] = ""
-        data['data']['tags'].append("Summer Audits")
+        #data['data']['tags'].append("Summer Audits")
+        
+        if "Summer Audits" in data['data']['tags']:
+            data['data']['tags'].remove('Summer Audits')
         
         # delete fields that aren't used on create
         del data['meta'] # metadata about the lead
@@ -347,24 +354,29 @@ for currID in oldBaseIDs:
         del data['data']['updated_at']
         del data['data']['creator_id']
         
-        # let's delete the lead
-        response = requests.request('DELETE', url=currURL, headers=headers)
+        if 'District' in data['data']['custom_fields']:
+            data['data']['custom_fields']['District'] = data['data']['custom_fields']['District'].replace("TDS","")
+        if 'Worksite' in data['data']['custom_fields']:
+            data['data']['custom_fields']['Worksite'] = data['data']['custom_fields']['Worksite'].replace("TDS","")
         
-        # check status code for error, this should be code 204
-        if response.status_code != 204: # 204 is the good code for no data found
-            print("something went wrong deleting, got status code " + str(response.status_code)) # error message
-            file.write("something went wrong deleting, got status code " + str(response.status_code) + " skipping to the next ID\n")
-            failed += 1
-            rowCntr += 1 # ready to move to the next row
-            continue # continue to the next ID once the error has been noted.
+        data['data']['custom_fields']['TDS'] = "No"
+        response = requests.put(currURL, headers=headers,data=json.dumps(data), verify = True)
         
-        # Now that the data has changed, let us go ahead and POST (create) a new lead but NOT upserting (avoid merge)
-        response = requests.post(url='https://api.getbase.com/v2/leads', headers=headers, data=json.dumps(data), verify=True)
-        
+#         # check status code for error, this should be code 204
+#         if response.status_code != 204: # 204 is the good code for no data found
+#             print("something went wrong deleting, got status code " + str(response.status_code)) # error message
+#             file.write("something went wrong deleting, got status code " + str(response.status_code) + " skipping to the next ID\n")
+#             failed += 1
+#             rowCntr += 1 # ready to move to the next row
+#             continue # continue to the next ID once the error has been noted.
+#         
+#         # Now that the data has changed, let us go ahead and POST (create) a new lead but NOT upserting (avoid merge)
+#         response = requests.post(url='https://api.getbase.com/v2/leads', headers=headers, data=json.dumps(data), verify=True)
+#         
         # check for errors and notify if needed
         if response.status_code != 200:
-            print("something went wrong creating a lead, got status code " + str(response.status_code))
-            file.write("something went wrong creating a lead, got status code " + str(response.status_code))
+            print("something went wrong updating the lead, got status code " + str(response.status_code))
+            file.write("something went wrong updating the lead, got status code " + str(response.status_code))
             failed += 1
             rowCntr += 1 # ready to move to the next row
             print(json.dumps(data))
@@ -374,9 +386,10 @@ for currID in oldBaseIDs:
         file.write("\nDumping new Lead Data\n")
         data = json.loads(response.text)
         file.write(json.dumps(data, sort_keys=True, indent=4))
-        file.write("\nOld Base ID: " + str(oldBaseIDs[rowCntr]) + "\tnew Base ID: " + str(data['data']['id']) + "\n")
+        #file.write("\nOld Base ID: " + str(oldBaseIDs[rowCntr]) + "\tnew Base ID: " + str(data['data']['id']) + "\n")
         csvOut.write(str(oldBaseIDs[rowCntr]) + ", " + str(data['data']['id']) + "\n")
-        print("Old Base ID: " + str(oldBaseIDs[rowCntr]) + ",\tnew Base ID: " + str(data['data']['id']) + "\n")
+        file.write("Done with Base ID: " + str(data['data']['id']) + "\n");
+        print("Done with Base ID: " + str(data['data']['id']) + "\n")
         
         #now we recreate the notes from the old lead for the new lead
 #         for note in noteData['items']:
@@ -399,8 +412,8 @@ for currID in oldBaseIDs:
         file.write("\nDone with lead-------------------------------------------------------\n\n\n")
         rowCntr += 1 # ready to move to the next row
         passed += 1
-        
-        errorMsg.set("Working..." + "{0:.2f}".format((passed + failed)/ len(oldBaseIDs)) + "% Done" )
+        print('Done with ' + str(rowCntr) +"\n")
+        #errorMsg.set("Working..." + "{0:.2f}".format((passed + failed)/ len(oldBaseIDs)) + "% Done" )
         
 print("Passed: " + str(passed) + '\n')
 print("failed: " + str(failed) + '\n')

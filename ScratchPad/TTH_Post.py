@@ -181,13 +181,13 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         
         # add the tags as a JSON array and upserting seems to clear all Tags for some reason
         #TODO: fix tag JSON array not working on upsert, implement tag update script logic using import tagUpdate
-        if(row[40] != "" or row[40] is None):
-            tagVal.append(row[40]) # read in value of tag ( for not just one value)
-            data['tags'] = tagVal # write array to json field data : {...'tags' : ['value']...}      
+#         if(row[40] != "" or row[40] is None):
+#             tagVal.append(row[40]) # read in value of tag ( for not just one value)
+#             data['tags'] = tagVal # write array to json field data : {...'tags' : ['value']...}      
         #################################################### WARNING: ADDED FOR SUMMER AUDITS ###########
-            data['tags'].append("Summer Audits")
-        else:
-            data['tags'] = ["Summer Audits"]
+#             data['tags'].append("Summer Audits")
+#         else:
+        data['tags'] = ['Life Licensed 30 Mile_0917']
         #################################################### WARNING: ADDED FOR SUMMER AUDITS ###########
         
         #------------------------------------Check for empty rows--------------------------------------
