@@ -128,8 +128,8 @@ for line in content:
         cntr += 1
         errors += 1
     else:
-        #print("Line " + str(cntr) + " OK, chars: " + str(len(line)))
-        file.write("Line " + str(cntr) + " chars: " + str(len(line)))
+        #print("Line " + str(cntr) + " OK, chars: " + str(len(line)) + "\n")
+        file.write("Line " + str(cntr) + " chars: " + str(len(line)) + "\n")
         cntr += 1
 
 if not content[0].startswith('H'):
@@ -660,8 +660,8 @@ for line in content:
     
 SIZE = len(content) # get the number of rows
 print("Scan completed, there are " + str(errors) + " errors in the file")
-file.write("Scan completed, there are " + str(errors) + " errors in the file")
+file.write("Scan completed, there are " + str(errors) + " errors in the file" + "\n")
 print("checked a total of " + str(SIZE-2) + " records")
-file.write("checked a total of " + str(SIZE-2) + " records")
+file.write("checked a total of " + str(SIZE-2) + " records" + "\n")
 file.close()
 input("Press Enter to continue")
