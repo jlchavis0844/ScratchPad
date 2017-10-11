@@ -17,8 +17,7 @@ from datetime import datetime  # for comparing time stamps
 
 
 # owners list will hold Key = Name, Value = owner_id
-owners = {
-    "Robert Lotter"  :768466, "Christa Colton"  :770197, "Steven Chow"  :770199, "Sheila Tedtaotao"  :770211,
+owners = {"Robert Lotter"  :768466, "Christa Colton"  :770197, "Steven Chow"  :770199, "Sheila Tedtaotao"  :770211,
     "Data Admin"  :770454, "David Barto"  :774967, "Kristi Breiten"  :775616, "Felipe Diaz"  :775617,
     "Chris Coventry"  :775618, "David Coventry"  :775619, "Rachel Lane"  :775621, "Darren Hulbert"  :775625,
     "Kusuma Suharto"  :775633, "Royce Meredith"  :775638, "Joyce Lavin"  :775768, "Chris McFarland"  :775769,
@@ -26,8 +25,7 @@ owners = {
     "Duane Kelley"  :813489, "Frank McDermott"  :813490, "Marketing Team"  :825798,
     "newbusiness@ralotter.com"  :828713, "Van Castaneda"  :861053, "Jonathan Pace"  :940653,
     "Gina Gonzales"  :966741, "Dominic Fama"  :973096, "Horacio Rojas"  :977350, "Brian Mendenhall"  :977351,
-    "James Chavis"  :991960, "Troy Mathis"  :1000138, "Guillermo Olmedo"  :1000159, "Katherine Seach"  :1000169
-    }
+    "James Chavis"  :991960, "Troy Mathis"  :1000138, "Guillermo Olmedo"  :1000159, "Katherine Seach"  :1000169}
 
 sources = {"Direct Mail" : 118573, "Telemarketing" : 118574, "TDS Compliance Clinic" : 118587, "TDS Retired" : 118588,
            "Referral" : 118590, "Guest" : 118592, "FHRI Agent Referral" : 118593, "TDS Referral" : 118594, 
@@ -35,8 +33,7 @@ sources = {"Direct Mail" : 118573, "Telemarketing" : 118574, "TDS Compliance Cli
            "TDS 125 Open Enrollment" : 118952,"None" : 137256, "FHRI My Advisor Magazine" : 150539, 
            "Direct Mail Phone-In" : 150540, "Beyond" : 159032, "CareerBuilder" : 159033,"Monster" : 159034, 
            "Active Sale" : 184862, "Indeed Ad" : 277038, "Craigs List" : 284440, "Campaign Referral" : 351441,
-           "TDS Customer" : 396033, "Exact Data" : 600804
-           }
+           "TDS Customer" : 396033, "Exact Data" : 600804}
 
 merged = []
 mergeCount = 0;
@@ -116,7 +113,7 @@ csv_path = fd.askopenfilename(**FILEOPENOPTIONS)  # choose a file
 if(csv_path is None or csv_path == ""):  # if the file picker is closed
     exit("No file chosen")  # shutdown before log is written
 
-file = open(path + '\\logs\\importLog' + time + '.txt', 'w+')  # create and open the log file for this session
+file = open(path + '.\\logs\\importLog' + time + '.txt', 'w+')  # create and open the log file for this session
 file.write("starting leads import at " + time + '\n')  # write to log
 file.write("using CSV: " + csv_path + '\n')
 
@@ -184,8 +181,7 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         if(row[40] != "" or row[40] is None):
             tagVal.append(row[40]) # read in value of tag ( for not just one value)
             data['tags'] = tagVal # write array to json field data : {...'tags' : ['value']...}
-        
-        data['tags'].append("Exact Data")
+            
         #------------------------------------Check for empty rows--------------------------------------
         # if a lead does not have a first and a list name, count this as a blank row and skip
         if('first_name' not in data or 'last_name' not in data):
@@ -231,28 +227,29 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         if "Worksite" in custom_fields and "District" in custom_fields:  # if Worksite is not empty
             url = "https://api.getbase.com/v2/leads/upsert?first_name=" + data["first_name"] + "&last_name="\
             + data["last_name"] + "&custom_fields[District]=" + custom_fields["District"] + "&custom_fields[Worksite]="\
-            + custom_fields["Worksite"]
+            + custom_fields["Worksite"] + "&custom_fields[New Section]=" + custom_fields["New Section"]
         elif "Worksite" in custom_fields:# if there is no district but there is a worksite 
             url = "https://api.getbase.com/v2/leads/upsert?first_name=" + data["first_name"] + "&last_name="\
-            + data["last_name"] + "&custom_fields[Worksite]=" + custom_fields["Worksite"]
+            + data["last_name"] + "&custom_fields[Worksite]=" + custom_fields["Worksite"] + "&custom_fields[New Section]="\
+            + custom_fields["New Section"]
         elif "District" in custom_fields.keys():  # if Worksite is empty, but not district
             url = "https://api.getbase.com/v2/leads/upsert?first_name=" + data["first_name"] + "&last_name="\
-            + data["last_name"] + "&custom_fields[District]=" + custom_fields["District"]
+            + data["last_name"] + "&custom_fields[District]=" + custom_fields["District"] + "&custom_fields[New Section]="\
+            + custom_fields["New Section"]
         else:  # if Worksite and district is empty, just first and last name
             url = "https://api.getbase.com/v2/leads/upsert?first_name=" + data["first_name"] + "&last_name="\
-            + data["last_name"]
-       
+            + data["last_name"] + "&custom_fields[New Section]=" + custom_fields["New Section"]       
 
         file.write("URI: " + url + '\n')  # write the URI to the log file
         response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=True)  # send it
         response_json = json.loads(response.text)  # read in the response JSON
-        file.write("Finished with status code: " + str(response.status_code))
-        print("Finished with status code: " + str(response.status_code))
+        file.write("Finished with status code: " + str(response.status_code) + "\n")
+        print("Finished with status code: " + str(response.status_code) + "\n")
         created = response_json['data']['created_at']  # store the time stamp for when the lead was created
         updated = response_json['data']['updated_at']  # store the time stamp for when the lead was updated
         file.write("created: " + created + '\n')  # write the created time stamp to log
         file.write("updated: " + updated + '\n')  # write the updated time stamp to the log
-         
+           
         if(timeDiff(created, updated) > 60):  # if the created and updated are more than a minute apart
             print("****WARNING, THIS LEAD WAS MERGED*****" + '\n')
             file.write("****WARNING, THIS LEAD WAS MERGED*****" + '\n')

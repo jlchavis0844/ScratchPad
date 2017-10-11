@@ -3,6 +3,10 @@ This script will eventually do some error checking on a
 completed Hartford EDI file. For now (8/24/2017), I will
 focus on just removing empty sections and renaming the
 file extensions
+
+10/10/2017 - removed the function of checking for and removing empty sections.
+             Empty sections will now left in
+10/10/2017 - Commented out sections to create another EDI file with removed sections.
 '''
 import datetime, json, requests, sys, os, csv, ctypes, re
 import tkinter  # for the file picker
@@ -27,26 +31,6 @@ def checkNum(line):
     except ValueError:
         return False
     
-'''
-A simple function that returns whether the given substring can be 
-converted into a valid phone number. Check num doesn't work since 
-phone numbers will need to replace "-".
-@param line - String of the text we will be taking the substring 
-from
-@param start - int of the first char to start the substring 
-(inclusive)
-@param stop - int of the char to stop the subdivision of the 
-substring (exclusive)
-@return boolean on whether the substring can be converted 
-'''
-def checkPhone(line, start, stop):
-    try:
-        testNum = line[start:stop].strip().replace("-","") 
-        if testNum != "":
-            int(testNum)
-        return True
-    except ValueError:
-        return False
 
 '''
 A function that attempts to convert a substring into a date in 
@@ -82,10 +66,11 @@ def checkPII(tokens):
     global errors
     global file
     #tokens[0] is section header, should be blank
-    if len(tokens[1]) > 0:
-        file.write('Warning: Customer number found: ' + tokens[1] + '\n')
-        print('Warning: Customer number found: ' + tokens[1] + '\n')
-    
+    if tokens[1] != "1225486":
+        file.write('ERROR: Customer number found: ' + tokens[1] + '\n')
+        print('ERROR: Customer number found: ' + tokens[1] + '\n')
+        errors += 1
+        
     if tokens[2] not in ['D', 'E']:
         file.write('ERROR: Transaction Code not valid: ' + tokens[2] + '\n')
         print('ERROR: Transaction Code not valid: ' + tokens[2] + '\n')
@@ -105,9 +90,9 @@ def checkPII(tokens):
         print('Warning: Employee ID is empty')
     
     if checkNum(tokens[5]) == False or len(tokens[5].strip()) != 9 or tokens[3] is None:
-        file.write('ERROR: member SSN not valid: ' + tokens[5] + '\n')
-        print('ERROR: member SSN not valid: ' + tokens[5] + '\n')
-        errors+=1
+        file.write('Warning: member SSN not valid: ' + tokens[5] + '\n')
+        #print('Warning: member SSN not valid: ' + tokens[5] + '\n')
+        #errors+=1
     
     if tokens[6] not in rcodes:
         file.write('ERROR: Invalid Relationship Code: ' + tokens[6] + '\n')
@@ -149,6 +134,9 @@ def checkPII(tokens):
         file.write('WARNING: Missing Smoker status\n')
         print('WARNING: Missing Smoker status\n')
         
+'''
+Runs check on HDR Section
+'''        
 def checkHDR(tokens):
     global errors
     global file
@@ -203,21 +191,21 @@ def checkECI(tokens):
         print('ERROR: Invalid Address Zip: ' + tokens[5] + '\n')
         errors+=1
                 
-    if tokens[6] != '804':
+    if tokens[6] != '840':
         file.write('ERROR: Invalid country code: ' + tokens[5] + '\n')
         print('ERROR: Invalid country code: ' + tokens[5] + '\n')
         errors+=1
 
     if len(tokens[9]) != 0:#s'ok if it be null
-        if len(tokens[9]) != 9 or checkNum(tokens[9] == False):
+        if len(tokens[9]) != 10 or checkNum(tokens[9]) == False:
             file.write('ERROR: Invalid Home Phone: ' + tokens[9] + '\n')
             print('ERROR: Invalid Home Phone: ' + tokens[9] + '\n')
             errors+=1
 
     if len(tokens[10]) != 0:
-        if len(tokens[10]) != 9 or checkNum(tokens[10] == False):
-            file.write('ERROR: Invalid Home Phone: ' + tokens[10] + '\n')
-            print('ERROR: Invalid Home Phone: ' + tokens[10] + '\n')
+        if len(tokens[10]) != 9 or checkNum(tokens[10]) == False:
+            file.write('ERROR: Invalid Cell Phone: ' + tokens[10] + '\n')
+            print('ERROR: Invalid C Phone: ' + tokens[10] + '\n')
             errors+=1
             
     if tokens[13] != 'CA':
@@ -535,8 +523,8 @@ file.write("There are " + str(SIZE) + " lines in the EDI\n")
 cntr = 1
 errors = 0
 tempName = os.path.basename(edi_path)
-outFileName = edi_path.replace(tempName,"") + "TEST_" + tempName
-ediOut = open(outFileName, 'w')
+#outFileName = edi_path.replace(tempName,"") + "TEST_" + tempName
+#ediOut = open(outFileName, 'w')
 scodes = ['PII', 'ECI', 'EMI', 'NST', 'LTD', 'VCI', 'VAC', 'HDR', 'FTR']
 rcodes = ['SP', 'CH', 'SI', 'PA', 'TR', 'GC', 'GP', 'OT', 'UN', '']
 mcodes = ['M', 'I', 'D', 'S', 'C', 'W', 'N', 'P', 'X', 'U']
@@ -545,6 +533,7 @@ dependent = True
 
 for line in content: #step through every line
     
+    ''' this section removes empty EDI sections, no longer needed.
     if('~NST~||||||||' in line):
         line = line.strip().replace('~NST~||||||||',"")
     
@@ -556,6 +545,7 @@ for line in content: #step through every line
     
     if('~VAC~|||||||||' in line):
         line = line.strip().replace('~VAC~|||||||||',"")
+    '''
     
     p = re.compile(r'~(.*?)~')
     parts = p.split(line)
@@ -601,20 +591,24 @@ for line in content: #step through every line
     
     #check if the line ends with break. if not add one
     #why would it not end with a line break? stip()?
-    if line.endswith('\n'):
-        ediOut.write(line)
-    else:
-        ediOut.write(line + '\n')
+#     if line.endswith('\n'):
+#         ediOut.write(line)
+#     else:
+#         ediOut.write(line + '\n')
     cntr += 1
     file.write('Done with line ' + str(cntr) + '\n')
-    print('Done with line ' + str(cntr) + '\n')
+    #print('Done with line ' + str(cntr) + '\n')
     
     
-ediOut.close()
+#ediOut.close()
 SIZE = len(content) # get the number of rows
 print("Scan completed, there are " + str(errors) + " errors in the file")
 file.write("Scan completed, there are " + str(errors) + " errors in the file")
 print("checked a total of " + str(SIZE-2) + " records")
 file.write("checked a total of " + str(SIZE-2) + " records")
 file.close()
-input("Press Enter to continue")
+
+#wait for ack if any errors were found.
+if errors > 0:
+    input("Press Enter to continue")
+    
