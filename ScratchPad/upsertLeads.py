@@ -245,24 +245,37 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         response_json = json.loads(response.text)  # read in the response JSON
         file.write("Finished with status code: " + str(response.status_code) + "\n")
         print("Finished with status code: " + str(response.status_code) + "\n")
-        created = response_json['data']['created_at']  # store the time stamp for when the lead was created
-        updated = response_json['data']['updated_at']  # store the time stamp for when the lead was updated
-        file.write("created: " + created + '\n')  # write the created time stamp to log
-        file.write("updated: " + updated + '\n')  # write the updated time stamp to the log
-           
-        if(timeDiff(created, updated) > 60):  # if the created and updated are more than a minute apart
-            print("****WARNING, THIS LEAD WAS MERGED*****" + '\n')
-            file.write("****WARNING, THIS LEAD WAS MERGED*****" + '\n')
-            mergeCount += 1
-            thisMerge = {}  # build array of merged leads
-            thisMerge['BaseID'] = response_json['data']['id']
-            thisMerge['Client ID '] = response_json['data']['custom_fields']['Client ID']
-            thisMerge['First'] = response_json['data']['first_name']
-            thisMerge['Last'] = response_json['data']['last_name']
-            print(list(thisMerge.keys()))
-            print(list(thisMerge.values()))
-            print("********************END MERGE DATA**********************\n")
-            merged.append(thisMerge)  # add to merged list
+        
+        #add error checking on response code
+        #currently getting a 409 code?
+        if response.status_code != 200:
+            file.write("ERROR*************************************************************\n\n")
+            file.write("Could not complete the upsert, returned: " + str(response.status_code) + '\n')
+            file.write("CHECK THE LOG FOR:\n")
+            file.write(json.dumps(payload, indent=4))
+            file.write("\n\n")
+            print("ERROR*************************************************************\n\n")
+            print("Could not complete the upsert, returned: " + str(response.status_code) + '\n')
+            print("CHECK THE LOG FOR: " + data["first_name"] + " " + data["last_name"])
+        else:
+            created = response_json['data']['created_at']  # store the time stamp for when the lead was created
+            updated = response_json['data']['updated_at']  # store the time stamp for when the lead was updated
+            file.write("created: " + created + '\n')  # write the created time stamp to log
+            file.write("updated: " + updated + '\n')  # write the updated time stamp to the log
+               
+            if(timeDiff(created, updated) > 60):  # if the created and updated are more than a minute apart
+                print("****WARNING, THIS LEAD WAS MERGED*****" + '\n')
+                file.write("****WARNING, THIS LEAD WAS MERGED*****" + '\n')
+                mergeCount += 1
+                thisMerge = {}  # build array of merged leads
+                thisMerge['BaseID'] = response_json['data']['id']
+                thisMerge['Client ID '] = response_json['data']['custom_fields']['Client ID']
+                thisMerge['First'] = response_json['data']['first_name']
+                thisMerge['Last'] = response_json['data']['last_name']
+                print(list(thisMerge.keys()))
+                print(list(thisMerge.values()))
+                print("********************END MERGE DATA**********************\n")
+                merged.append(thisMerge)  # add to merged list
             
 # write merged to the log file
 file.write("the following leads were merged\n")        
