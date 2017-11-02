@@ -215,7 +215,7 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
             data["address"] = address
             
         payload["data"] = data # write the data to the payload list
-        file.write(json.dumps(payload) + '\n') # write the JSON to the log file for record keeping
+        file.write("sending:\n"  + json.dumps(payload) + '\n') # write the JSON to the log file for record keeping
         print(json.dumps(payload, indent=4))# display JSON that was just written
 
         #build header for API call
@@ -267,11 +267,15 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
                 print("****WARNING, THIS LEAD WAS MERGED*****" + '\n')
                 file.write("****WARNING, THIS LEAD WAS MERGED*****" + '\n')
                 mergeCount += 1
+                
                 thisMerge = {}  # build array of merged leads
                 thisMerge['BaseID'] = response_json['data']['id']
                 thisMerge['Client ID '] = response_json['data']['custom_fields']['Client ID']
                 thisMerge['First'] = response_json['data']['first_name']
                 thisMerge['Last'] = response_json['data']['last_name']
+                thisMerge['Created'] = created
+                thisMerge['Updated'] = updated
+                
                 print(list(thisMerge.keys()))
                 print(list(thisMerge.values()))
                 print("********************END MERGE DATA**********************\n")
@@ -284,11 +288,12 @@ for item in merged:
 
 # make a special CSV of the merges 
 if(mergeCount > 0):  # if merges were detected
-    print
-    with open(os.getcwd() + '\\mergeReport_' + time + '.csv', 'w') as f:  # open csv
+    print("merges found, printing list\n")
+    with open('C:\\apps\\NiceOffice\\LogsMERGES_' + time + '.csv', 'w') as f:  # open csv
         w = csv.DictWriter(f, merged[0].keys(), lineterminator='\n')  # make writer
         w.writeheader()  # write header row
         for merge in merged:  # write the merges to the merge CSV
             w.writerow(merge)
+            print(merge)
         
 input("press Enter key to continue") # pause at the end of running the program to allow for reading

@@ -187,7 +187,7 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         #################################################### WARNING: ADDED FOR SUMMER AUDITS ###########
 #             data['tags'].append("Summer Audits")
 #         else:
-        data['tags'] = ['Life Licensed 30 Mile_0917']
+        data['tags'] = ['TTH 9.18.17']
         #################################################### WARNING: ADDED FOR SUMMER AUDITS ###########
         
         #------------------------------------Check for empty rows--------------------------------------

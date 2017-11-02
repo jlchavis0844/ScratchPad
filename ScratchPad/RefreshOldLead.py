@@ -331,14 +331,16 @@ for currID in oldBaseIDs:
 
         # now we can change the info, and push it back to base as a B lead
         data['data']['owner_id'] = ownerID # set the owner to choosen ID
+        
+#NEW LEAD TYPE GOES HERE!!!!!!!!!!!!!!!!
         data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
         data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
 
 #Warning!!!!!*************************************************        
         #this is for a special occasion, don't leave uncommented!!!!!!!!!!!!!!!!!!!!!!
-        del data['data']['source_id']
-        data['data']['custom_fields']['Response Note'] = ""
-        data['data']['tags'].append("Summer Audits")
+#         del data['data']['source_id']
+#         data['data']['custom_fields']['Response Note'] = ""
+#         data['data']['tags'].append("Summer Audits")
         
         # delete fields that aren't used on create
         del data['meta'] # metadata about the lead
