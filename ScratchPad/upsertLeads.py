@@ -14,27 +14,9 @@ import tkinter  # for the file picker
 import tkinter.filedialog as fd  # for picking the file
 from datetime import datetime  # for comparing time stamps
 
-
-
-# owners list will hold Key = Name, Value = owner_id
-owners = {"Robert Lotter"  :768466, "Christa Colton"  :770197, "Steven Chow"  :770199, "Sheila Tedtaotao"  :770211,
-    "Data Admin"  :770454, "David Barto"  :774967, "Kristi Breiten"  :775616, "Felipe Diaz"  :775617,
-    "Chris Coventry"  :775618, "David Coventry"  :775619, "Rachel Lane"  :775621, "Darren Hulbert"  :775625,
-    "Kusuma Suharto"  :775633, "Royce Meredith"  :775638, "Joyce Lavin"  :775768, "Chris McFarland"  :775769,
-    "Victor Leonino"  :778823, "Chuck Major"  :783519, "Paul Bruil"  :799111, "Adrian Galvan"  :800987,
-    "Duane Kelley"  :813489, "Frank McDermott"  :813490, "Marketing Team"  :825798,
-    "newbusiness@ralotter.com"  :828713, "Van Castaneda"  :861053, "Jonathan Pace"  :940653,
-    "Gina Gonzales"  :966741, "Dominic Fama"  :973096, "Horacio Rojas"  :977350, "Brian Mendenhall"  :977351,
-    "James Chavis"  :991960, "Troy Mathis"  :1000138, "Guillermo Olmedo"  :1000159, "Katherine Seach"  :1000169}
-
-sources = {"Direct Mail" : 118573, "Telemarketing" : 118574, "TDS Compliance Clinic" : 118587, "TDS Retired" : 118588,
-           "Referral" : 118590, "Guest" : 118592, "FHRI Agent Referral" : 118593, "TDS Referral" : 118594, 
-           "TDS Web" : 118595,"Email" : 118948, "TDS MN Print" : 118949, "TDS MN Email" : 118950, "TDS Audit" : 118951, 
-           "TDS 125 Open Enrollment" : 118952,"None" : 137256, "FHRI My Advisor Magazine" : 150539, 
-           "Direct Mail Phone-In" : 150540, "Beyond" : 159032, "CareerBuilder" : 159033,"Monster" : 159034, 
-           "Active Sale" : 184862, "Indeed Ad" : 277038, "Craigs List" : 284440, "Campaign Referral" : 351441,
-           "TDS Customer" : 396033, "Exact Data" : 600804}
-
+token = ''
+owners = {}
+sources = {}
 merged = []
 mergeCount = 0;
 
@@ -82,20 +64,69 @@ def timeDiff(created, updated):
     # print(str(difference.seconds) + " second time difference")
     return difference.seconds  # one hour is 3600 seconds
 
+def loadOwners():
+    global token
+    global owners
+    if token is None or token == '':
+        token = getToken()
+    
+    oheaders = {'Accept': 'application/json',
+                 'Content-Type': 'application/json',
+                 'Authorization': 'Bearer ' + token}
+    
+    oURL = 'https://api.getbase.com/v2/users?per_page=100&status=active'
+    oresponse = requests.get(url=oURL, headers=oheaders, verify = True)
+    oresponse_json = json.loads(oresponse.text)  # read in the response JSON
+    items = oresponse_json['items']
+    owners = {}
+    
+    for item in items:
+        owners[item['data']['name']] = item['data']['id']
+
+# this function finds the owner id for the given name and returns owner_id as an int
+def getOwner(ownerName):
+    global owners
+    if not owners or len(owners) == 0:
+        loadOwners()
+    
+    if(ownerName == "" or ownerName == " " or ownerName is None):
+        return ""
+    else:
+        return owners[ownerName]    
+
 # serves as a getter for source that reads sources by the key and returns value
 # all performs blank, space, and null check (returns empty)
+#if sources not loaded, it will load them via api
 def getSource(sourceName):
+    global sources
+    if not sources or len(sources) == 0:
+        loadSources()
+        
     if(sourceName == "" or sourceName == " " or sourceName is None):
         return ""
     else:
         return sources[sourceName]
 
-# this function finds the owner id for the given name and returns owner_id as an int
-def getOwner(ownerName):
-    if(ownerName == "" or ownerName == " " or ownerName is None):
-        return ""
-    else:
-        return owners[ownerName]
+#fetches the inital sources list from the baseAPI. This will only load the first 100
+#currently set to use global, could comment it out and simple return source for sources = loadSources()
+#use as loadSources() with the sources loaded into global sources variable as dict
+def loadSources():
+    global token
+    if token is None or token == '':
+        token = getToken()
+    
+    sheaders = {'Accept': 'application/json',
+                 'Content-Type': 'application/json',
+                 'Authorization': 'Bearer ' + token}
+    
+    sURL = "https://api.getbase.com/v2/lead_sources?per_page=100"
+    sresponse = requests.get(url=sURL, headers=sheaders, verify=True)  # send it
+    sresponse_json = json.loads(sresponse.text)  # read in the response JSON
+    items = sresponse_json['items']
+    global sources
+    sources = {}
+    for item in items:
+        sources[item['data']['name']] = item['data']['id']
     
 # optional stuff for the file picker
 FILEOPENOPTIONS = dict(defaultextension='.csv', filetypes=[('CSV file', '*.csv'), ('All files', '*.*')])
@@ -135,14 +166,14 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         tagVal = [] # the array to put into data as an array of tags
         
         #Lets load the CSV values into JSON objects data, address, or custom
-        data["email"] = row[10]  # each column is mapped to a json object 
+        data["email"] = row[10].strip()  # each column is mapped to a json object 
         data["source_id"] = getSource(row[1])
         custom_fields["Our Region"] = row[35]
         custom_fields["TDS"] = row[34]
         custom_fields["Territory"] = row[11]
         data["owner_id"] = getOwner(row[0])
-        data["first_name"] = row[2]
-        data["last_name"] = row[3]
+        data["first_name"] = row[2].strip()
+        data["last_name"] = row[3].strip()
         address["line1"] = row[4]
         address["city"] = row[5]
         address["state"] = row[6]
@@ -289,7 +320,7 @@ for item in merged:
 # make a special CSV of the merges 
 if(mergeCount > 0):  # if merges were detected
     print("merges found, printing list\n")
-    with open('C:\\apps\\NiceOffice\\LogsMERGES_' + time + '.csv', 'w') as f:  # open csv
+    with open('C:\\apps\\NiceOffice\\Logs\\MERGES_' + time + '.csv', 'w') as f:  # open csv
         w = csv.DictWriter(f, merged[0].keys(), lineterminator='\n')  # make writer
         w.writeheader()  # write header row
         for merge in merged:  # write the merges to the merge CSV
