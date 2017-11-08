@@ -66,7 +66,7 @@ csv_path = fd.askopenfilename(**FILEOPENOPTIONS)  # choose a file
 if(csv_path is None or csv_path == ""):  # if the file picker is closed
     exit("No file chosen")  # shutdown before log is written
 
-file = open(path + '\\logs\\TDSWipe' + time + '.txt', 'w+')  # create and open the log file for this session
+file = open(path + '.\\logs\\TDSWipe' + time + '.txt', 'w+')  # create and open the log file for this session
 file.write("starting tag update at " + time + '\n')  # write to log
 file.write("using CSV: " + csv_path + '\n')
 rowCntr = -1
@@ -79,11 +79,12 @@ headers = {'Accept': 'application/json',
 baseURL = 'https://api.getbase.com/v2/'
 
 with open(csv_path, encoding="utf8", newline='', errors = 'ignore') as csvfile: # open files as UTF-8
-    reader = csv.reader(csvfile, delimiter=',')
+    reader = list(csv.reader(csvfile, delimiter=','))
     
     print('------------------------------------------------ Here we go ------------------------------------------------')
-    
+    print('found ' + str(len(reader)) + ' contacts/leads')
     for row in reader:  # iterate through each row (record)
+        print("starting row " + str(rowCntr))
         rowCntr += 1  # start at zero
         if(rowCntr == 0):  # skip row 0, we don't need the header names
             continue;  # goes to top of the loop
