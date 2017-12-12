@@ -149,6 +149,160 @@ def getToken():
     # print(token)
     return token
 
+def ready():    
+    # redundant check
+    if(csv_path is None or csv_path == ""):  # if the file picker is closed
+        exit("No file chosen")  # shutdown before log is written
+    
+    # open log
+    time = datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S')  # get timestamp for the log writing.
+    
+    #weird problem with paths not ending in \ sometimes, lets hack around it
+    pathList = list(logPath.get())
+    if pathList[len(pathList)-1] != '\\' or pathList[len(pathList)-1] != '/':
+        if '\\' in pathList:
+            logPath.set(logPath.get() + '\\')
+        else:
+            logPath.set(logPath.get() + '/')
+    
+    file = open(logPath.get() + 'NDNCFieldDelete-' + time + '.txt', 'w+')  # create and open the log file for this session
+    print("making log file " + logPath.get() + '90DayLostDealToLead-' + time + '.txt')
+    file.write('this log was written to ' + logPath.get() + '90DayLostDealToLead' + time + '.txt\n')
+    file.write("starting update at " + time + '\n')  # write to log
+    file.write("using CSV: " + csv_path + '\n')
+    #file.write("owner is set to " + ownerVar.get()+ '\n')
+    file.write("log path set to " + logPath.get()+ '\n')
+    file.write("this action is being ran by " + os.getlogin() + " on computer " + os.environ['COMPUTERNAME']+ '\n')
+    file.write("command line args: " + str(args) + "\n")
+    
+    
+    oldBaseIDs = [] # this will hold the id's of the A or TDS A Contacts (probably, maybe)
+    failed = 0 # track failures
+    passed = 0 # track success
+    
+    # Now we open the CSV containing the id's of the contacts we are going to work with
+    # The CSV should look something like below, read from column 0:
+    # |   id   |
+    # | 123654 |
+    # | 446588 |
+    with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  # open file as UTF-8
+        reader = csv.reader(csvfile, delimiter=',')  # makes the file a csv reader
+        rowCntr = -1  # start index, will track which row the process is on
+        
+        for row in reader: #reader contains all our records
+            rowCntr += 1 #increment our tracker, row0 is the header row
+            if(rowCntr == 0): #skip the header row
+                continue # skip
+            
+            if not row: # if the row is empty (usually on the last row), skip ahead
+                continue
+            
+            #if not header, lets take a look at the data
+            #check to see if the data is numeric
+            try: # if int conversion fails, this isn't a base ID
+                tempID = int(row[0])
+                oldBaseIDs.append(tempID) #add the id from the CSV to the list
+            except ValueError:
+                file.write("ERROR: " + str(row[0]) + " is not a valid number and ID\n")
+                print("ERROR: " + str(row[0]) + " is not a valid number and ID\n")
+                failed += 1 # adding failure here since the number won't be added to the oldBaseIDs list
+                
+    #done reading in the IDs
+    file.write("loaded " + str(len(oldBaseIDs)) + " IDs from the CSV file\n")
+    file.write(json.dumps(oldBaseIDs, sort_keys=True, indent=4))
+    file.write("\n\n")
+    print("loaded " + str(len(oldBaseIDs)) + " IDs from the CSV file\n")
+    
+    #start the online stuff
+    #the starting URL for getting results
+    url = "https://api.getbase.com/v2/leads/"
+    headers = { # headers for the HTTP calls
+        'accept':"application/json",
+        'authorization' : "Bearer " + token,
+        'content-type': "application/json"
+        }
+    
+    #noteParams = {"per_page" : 100, "page" : 1, }
+    
+    rowCntr = 0 # reset the counter to zero to track num of IDs
+    #oldContacts = [] # this will hold the response json for all the leads loaded into
+    finished = 0
+    #step rough all the loaded IDs
+    for currID in oldBaseIDs:
+            print("starting with old ID " + str(oldBaseIDs[rowCntr]) + "\n")
+            file.write("starting with old ID " + str(oldBaseIDs[rowCntr]) + "\n")
+            
+            currURL = url + str(oldBaseIDs[rowCntr])  # append the id to the API url
+            
+            payload = {}
+            payload['data'] = {}
+            custFields = {}
+            custFields['NDNC'] = None
+            custFields['NDNC ExpDate'] = ""
+            custFields['NDNC HmPhone'] = ""
+            custFields['Ndnc hm phone #1'] = ""
+            custFields['Ndnc exp date #1'] = ""
+            custFields['NDNC HmPhone Status'] = ""
+            custFields['Alt Phone NDNC'] = ""
+            custFields['Alt Phone NDNC Exp Date'] = ""
+            custFields['Alt phone #1 NDNC'] = ""
+            custFields['Alt phone #1 NDNC Exp Date'] = ""
+            custFields['Alt phone #2 NDNC'] = ""
+            custFields['Alt phone #2 NDNC Exp Date'] = ""
+            custFields['Alt Phone #3 NDNC'] = ""
+            custFields['Alt Phone #3 NDNC Exp Date'] = ""
+            custFields['Alt Phone #4 NDNC'] = ""
+            custFields['Alt Phone #4 NDNC Exp Date'] = ""
+            custFields['Alt Phone #5 NDNC'] = ""
+            custFields['Alt Phone #5 NDNC Exp Date'] = ""
+            custFields['Alt Phone #6 NDNC Exp Date'] = ""
+            custFields['Alt Phone #7 NDNC'] = ""
+            custFields['Alt Phone #7 NDNC Exp Date'] = ""
+            custFields['Alt Phone #6 NDNC'] = ""
+            payload['data']['custom_fields'] = custFields
+            
+            response = requests.put(url=currURL, headers=headers,data=json.dumps(payload), verify=True)
+            
+            # check status code for error, this is most likely a 404 status code because the contact cannot be found
+            if response.status_code != 200: # 200 is the good code
+                print("something went wrong getting data, got status code " + str(response.status_code)) # error message
+                file.write("something went wrong getting data, got status code " + str(response.status_code) + " skipping to the next ID\n")
+                failed += 1
+                rowCntr += 1 # ready to move to the next row
+                finished +=1
+                continue # continue to the next ID once the error has been noted.
+    
+            file.write("found " + str(oldBaseIDs[rowCntr]) + "\n") 
+            data = json.loads(response.text) # make a json
+            file.write(json.dumps(data, sort_keys=True, indent=4)) # write the json to log for safe keeping
+            file.write('\n')
+            #print(json.dumps(data, sort_keys=True, indent=4))         
+            
+            file.write("\nDone with lead-------------------------------------------------------\n\n\n")
+            rowCntr += 1 # ready to move to the next row
+            passed += 1
+            
+            finished += 1 
+            if passed != 0:
+                m, s = divmod(((len(oldBaseIDs) - finished)*0.7), 60)
+                h, m = divmod(m, 60)
+                remaining = ("%02d:%02d:%02d" % (h, m, s))
+                errorMsg.set("Working:" + "{0:.2f}".format((finished/ len(oldBaseIDs))*100) + "% Done, Remaining(h:m:s): " + remaining)
+                master.update()
+                print("Working:" + "{0:.2f}".format((finished/ len(oldBaseIDs))*100) + "% Done, Remaining(h:m:s): " + remaining)
+                print('\nDone with lead ' + str(currID) + '--------------------------------------------------------\n\n' )
+            
+    print("Passed: " + str(passed) + '\n')
+    print("failed: " + str(failed) + '\n')
+    print("Closing ---------------------------------------- Goodbye!")
+    file.write("Passed: " + str(passed) + '\n')
+    file.write("failed: " + str(failed) + '\n')
+    file.write('done at ' + datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S'))
+    file.close()
+    errorMsg.set("finished with " + str(passed) + " passed and " + str(failed) + " fails")
+    #if args.wait != 'no':
+    #    input('Press enter to continue')
+
 #--------------------------------------------------------START PROGRAM ---------------------------------------------------------------------#
 
 #load the token
@@ -204,163 +358,11 @@ else:
     
     # lets build the objects
     #o1 = tkinter.OptionMenu(master, ownerVar, *newOwnerList).grid(row=1, column=0, sticky="ew", pady=4, padx=4)  # drop down list of owners, note list pointer
-    b1 = tkinter.Button(master, text="Run the Program", font="Helvetica 12 bold italic", command=getOwner, width=20).grid(row=3, column=0,sticky="ew", pady=4, padx=4) # add a single button to the popup
+    b1 = tkinter.Button(master, text="Run the Program", font="Helvetica 12 bold italic", command=ready, width=20).grid(row=3, column=0,sticky="ew", pady=4, padx=4) # add a single button to the popup
     b2 = tkinter.Button(master, text="Choose CSV File", command=setPath, width=20).grid(row=0, column=0, sticky="ew", pady=4, padx=4) # use to pick the buttom
     b3 = tkinter.Button(master, text="Change Log Path", command=setLog, width=20).grid(row=2, column=0, sticky="ew", pady=4, padx=4) # used to change the default log path
     exitBtn = tkinter.Button(master, text="Close", font="Helvetica 12 bold italic", command=master.quit, width=20).grid(row=3, column=1, sticky="ew", pady=4, padx=4) # quits the program
     #start the GUI
     tkinter.mainloop() # start the window thread
 
-# redundant check
-if(csv_path is None or csv_path == ""):  # if the file picker is closed
-    exit("No file chosen")  # shutdown before log is written
-
-# open log
-time = datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S')  # get timestamp for the log writing.
-
-#weird problem with paths not ending in \ sometimes, lets hack around it
-pathList = list(logPath.get())
-if pathList[len(pathList)-1] != '\\' or pathList[len(pathList)-1] != '/':
-    if '\\' in pathList:
-        logPath.set(logPath.get() + '\\')
-    else:
-        logPath.set(logPath.get() + '/')
-
-file = open(logPath.get() + 'NDNCFieldDelete-' + time + '.txt', 'w+')  # create and open the log file for this session
-print("making log file " + logPath.get() + '90DayLostDealToLead-' + time + '.txt')
-file.write('this log was written to ' + logPath.get() + '90DayLostDealToLead' + time + '.txt\n')
-file.write("starting update at " + time + '\n')  # write to log
-file.write("using CSV: " + csv_path + '\n')
-#file.write("owner is set to " + ownerVar.get()+ '\n')
-file.write("log path set to " + logPath.get()+ '\n')
-file.write("this action is being ran by " + os.getlogin() + " on computer " + os.environ['COMPUTERNAME']+ '\n')
-file.write("command line args: " + str(args) + "\n")
-
-
-oldBaseIDs = [] # this will hold the id's of the A or TDS A Contacts (probably, maybe)
-failed = 0 # track failures
-passed = 0 # track success
-
-# Now we open the CSV containing the id's of the contacts we are going to work with
-# The CSV should look something like below, read from column 0:
-# |   id   |
-# | 123654 |
-# | 446588 |
-with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  # open file as UTF-8
-    reader = csv.reader(csvfile, delimiter=',')  # makes the file a csv reader
-    rowCntr = -1  # start index, will track which row the process is on
-    
-    for row in reader: #reader contains all our records
-        rowCntr += 1 #increment our tracker, row0 is the header row
-        if(rowCntr == 0): #skip the header row
-            continue # skip
-        
-        if not row: # if the row is empty (usually on the last row), skip ahead
-            continue
-        
-        #if not header, lets take a look at the data
-        #check to see if the data is numeric
-        try: # if int conversion fails, this isn't a base ID
-            tempID = int(row[0])
-            oldBaseIDs.append(tempID) #add the id from the CSV to the list
-        except ValueError:
-            file.write("ERROR: " + str(row[0]) + " is not a valid number and ID\n")
-            print("ERROR: " + str(row[0]) + " is not a valid number and ID\n")
-            failed += 1 # adding failure here since the number won't be added to the oldBaseIDs list
-            
-#done reading in the IDs
-file.write("loaded " + str(len(oldBaseIDs)) + " IDs from the CSV file\n")
-file.write(json.dumps(oldBaseIDs, sort_keys=True, indent=4))
-file.write("\n\n")
-print("loaded " + str(len(oldBaseIDs)) + " IDs from the CSV file\n")
-
-#start the online stuff
-#the starting URL for getting results
-url = "https://api.getbase.com/v2/contacts/"
-headers = { # headers for the HTTP calls
-    'accept':"application/json",
-    'authorization' : "Bearer " + token,
-    'content-type': "application/json"
-    }
-
-#noteParams = {"per_page" : 100, "page" : 1, }
-
-rowCntr = 0 # reset the counter to zero to track num of IDs
-#oldContacts = [] # this will hold the response json for all the leads loaded into
-finished = 0
-#step rough all the loaded IDs
-for currID in oldBaseIDs:
-        print("starting with old ID " + str(oldBaseIDs[rowCntr]) + "\n")
-        file.write("starting with old ID " + str(oldBaseIDs[rowCntr]) + "\n")
-        
-        currURL = url + str(oldBaseIDs[rowCntr])  # append the id to the API url
-        
-        payload = {}
-        payload['data'] = {}
-        custFields = {}
-        custFields['NDNC'] = ""
-        custFields['NDNC ExpDate'] = ""
-        custFields['NDNC HmPhone'] = ""
-        custFields['Ndnc hm phone #1'] = ""
-        custFields['Ndnc exp date #1'] = ""
-        custFields['NDNC HmPhone Status'] = ""
-        custFields['Alt Phone NDNC'] = ""
-        custFields['Alt Phone NDNC Exp Date'] = ""
-        custFields['Alt phone #1 NDNC'] = ""
-        custFields['Alt phone #1 NDNC Exp Date'] = ""
-        custFields['Alt phone #2 NDNC'] = ""
-        custFields['Alt phone #2 NDNC Exp Date'] = ""
-        custFields['Alt Phone #3 NDNC'] = ""
-        custFields['Alt Phone #3 NDNC Exp Date'] = ""
-        custFields['Alt Phone #4 NDNC'] = ""
-        custFields['Alt Phone #4 NDNC Exp Date'] = ""
-        custFields['Alt Phone #5 NDNC'] = ""
-        custFields['Alt Phone #5 NDNC Exp Date'] = ""
-        custFields['Alt Phone #6 NDNC Exp Date'] = ""
-        custFields['Alt Phone #7 NDNC'] = ""
-        custFields['Alt Phone #7 NDNC Exp Date'] = ""
-        custFields['Alt Phone #6 NDNC'] = ""
-        payload['data']['custom_fields'] = custFields
-        
-        response = requests.put(url=url, headers=headers,data=json.dumps(payload), verify=True)
-        
-        # check status code for error, this is most likely a 404 status code because the contact cannot be found
-        if response.status_code != 200: # 200 is the good code
-            print("something went wrong getting data, got status code " + str(response.status_code)) # error message
-            file.write("something went wrong getting data, got status code " + str(response.status_code) + " skipping to the next ID\n")
-            failed += 1
-            rowCntr += 1 # ready to move to the next row
-            finished +=1
-            continue # continue to the next ID once the error has been noted.
-
-        file.write("found " + str(oldBaseIDs[rowCntr]) + ", moving to notes and deals...\n") 
-        data = json.loads(response.text) # make a json
-        file.write(json.dumps(data, sort_keys=True, indent=4)) # write the json to log for safe keeping
-        file.write('\n')
-        #print(json.dumps(data, sort_keys=True, indent=4))         
-        
-        file.write("\nDone with lead-------------------------------------------------------\n\n\n")
-        rowCntr += 1 # ready to move to the next row
-        passed += 1
-        
-        finished += 1 
-        if passed != 0:
-            m, s = divmod(((len(oldBaseIDs) - finished)*3), 60)
-            h, m = divmod(m, 60)
-            remaining = ("%02d:%02d:%02d" % (h, m, s))
-            errorMsg.set("Working:" + "{0:.2f}".format((finished/ len(oldBaseIDs))*100) + "% Done, Remaining(h:m:s): " + remaining)
-            master.update()
-            print("Working:" + "{0:.2f}".format((finished/ len(oldBaseIDs))*100) + "% Done, Remaining(h:m:s): " + remaining)
-            print('\nDone with lead ' + str(currID) + '--------------------------------------------------------\n\n' )
-        
-print("Passed: " + str(passed) + '\n')
-print("failed: " + str(failed) + '\n')
-print("Closing ---------------------------------------- Goodbye!")
-file.write("Passed: " + str(passed) + '\n')
-file.write("failed: " + str(failed) + '\n')
-file.write('done at ' + datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S'))
-file.close()
-errorMsg.set("finished with " + str(passed) + " passed and " + str(failed) + " fails")
-#if args.wait != 'no':
-#    input('Press enter to continue')
         

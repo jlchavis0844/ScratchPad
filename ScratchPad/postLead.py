@@ -41,6 +41,7 @@ def getToken():
         root.withdraw()
         # withdraw()  # hide Frame
         path = fd.askopenfilename(**FILEOPENOPTIONS)  # choose a file
+        
     if(path == ""):
         ctypes.windll.user32.MessageBoxW(0, "No file was chosen, quiting", "Token File", 0)
         exit()
@@ -64,6 +65,8 @@ def timeDiff(created, updated):
     # print(str(difference.seconds) + " second time difference")
     return difference.seconds  # one hour is 3600 seconds
 
+# loads a dict of available owners in the following format {"James Chavis" : 123456789}
+# loads into owners
 def loadOwners():
     global token
     global owners
@@ -269,6 +272,5 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
             print('Base ID: ' + str(newBaseID) + '\n')
             file.write('Base ID: ' + str(newBaseID) + '\n')
             
-
 file.close
 input("press Enter key to continue") # pause at the end of running the program to allow for reading
