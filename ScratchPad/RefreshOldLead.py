@@ -28,6 +28,7 @@ List of future updates (prefix out for tracking)
 
 2/1/2017 - started
 2/13/2017 - Finished core functionality with minimum error checking, no correction, no note transfer
+12/12/2017 - resturctured main logic into startProg function, changed owner and source fetching
 '''
 
 import datetime  # for comparing time stamps
@@ -50,10 +51,12 @@ parser.add_argument('--logdir', '-l', dest='logdir', help="directory to store lo
 parser.add_argument('--wait', '-w', dest='wait', help="No means the program closes after running, else, it waits for key", required=False) # wait arg
 args = parser.parse_args() # fetch args into namespace so we can call args.argName
 
-# serves as a getter for source that reads sources by the key and returns value
-# all performs blank, space, and null check (returns empty)
-#if sources not loaded, it will load them via api
+
 def getSource(sourceName):
+    """serves as a getter for source that reads sources by the key and returns value
+    all performs blank, space, and null check (returns empty)
+    if sources not loaded, it will load them via api
+    """
     global sources
     if not sources or len(sources) == 0:
         loadSources()
@@ -63,10 +66,12 @@ def getSource(sourceName):
     else:
         return sources[sourceName]
 
-#fetches the inital sources list from the baseAPI. This will only load the first 100
-#currently set to use global, could comment it out and simple return source for sources = loadSources()
-#use as loadSources() with the sources loaded into global sources variable as dict
+
 def loadSources():
+    """fetches the inital sources list from the baseAPI. This will only load the first 100
+    currently set to use global, could comment it out and simple return source for sources = loadSources()
+    use as loadSources() with the sources loaded into global sources variable as dict
+    """
     global token
     if token is None or token == '':
         token = getToken()
@@ -83,6 +88,7 @@ def loadSources():
     sources = {}
     for item in items:
         sources[item['data']['name']] = item['data']['id']
+        
 
 def setPath():
     """this function is called by the CSV path button to set the logPath variable"""
@@ -92,9 +98,6 @@ def setPath():
     csv_text.set(csv_path)
     errorMsg.set("") # clear and user error message and proper path loading
     return # go back
-
-
-#@todo: Fix the initial directory picker path to  \\nas3\users\ + os.getlogin() + \Documents\
 
 def setLog():
     """this function is called when the user clicks the button to change log path"""
@@ -106,10 +109,10 @@ def setLog():
     errorMsg.set("") # reset user's error message as needed
     return # go back
 
-
-# loads a dict of available owners in the following format {"James Chavis" : 123456789}
-# loads into owners
 def loadOwners():
+    """loads a dict of available owners in the following format {"James Chavis" : 123456789}
+    loads into owners
+    """
     global token
     global owners
     if token is None or token == '':
@@ -128,8 +131,8 @@ def loadOwners():
     for item in items:
         owners[item['data']['name']] = item['data']['id']
 
-# this function finds the owner id for the given name and returns owner_id as an int
 def getOwner(ownerName):
+    """this function finds the owner id for the given name and returns owner_id as an int"""
     global owners
     if not owners or len(owners) == 0:
         loadOwners()
@@ -178,6 +181,7 @@ def getToken():
 
 #--------------------------------------------------------START PROGRAM ---------------------------------------------------------------------#
 def startProgram():
+    """Main logic of the program"""
     # redundant check
     if(csv_path is None or csv_path == ""):  # if the file picker is closed
         exit("No file chosen")  # shutdown before log is written
@@ -275,24 +279,7 @@ def startProgram():
                 file.write("something went wrong getting data, got status code " + str(response.status_code) + " skipping to the next ID\n")
                 failed += 1
                 rowCntr += 1 # ready to move to the next row
-                continue # continue to the next ID once the error has been noted.
-    
-            # we found the ID if we have gotten this far
-            # let's check for any notes associated with this lead using the following assumptions: at most 1 page of 100 notes
-    #         noteURL = "https://api.getbase.com/v2/notes?per_page=100&page=1&resource_id=" + str(oldBaseIDs[rowCntr])
-    #         qString = {"resource_id" : str(oldBaseIDs[rowCntr]), "page": "1", "per_page" : "100"} # build API params
-    #         noteResponse = requests.request("GET", noteURL, data = "", headers=headers, params=qString)
-    #         
-    #         if noteResponse.status_code != 200:
-    #             print("something went wrong getting notes, got status code " + str(response.status_code)) # error message
-    #             file.write("something went wrong getting notes, got status code " + str(response.status_code) + " process will continue\n")
-    #             failed += 1
-    #             rowCntr += 1 # ready to move to the next row
-    #             #continue # Don't stop here since notes aren't a deal breaker
-    #         else:
-    #             noteData = json.loads(noteResponse.text)
-    #             #print("found " + str(noteData['meta']['count']) + " notes\n")
-    #             file.write("found " + str(noteData['meta']['count']) + " notes\n")     
+                continue # continue to the next ID once the error has been noted.    
             
             file.write("found " + str(oldBaseIDs[rowCntr]) + ", deleting the lead\n") 
             data = json.loads(response.text) # make a json
@@ -302,14 +289,8 @@ def startProgram():
             data['data']['owner_id'] = ownerID # set the owner to choosen ID
             
     #NEW LEAD TYPE GOES HERE!!!!!!!!!!!!!!!!
-            data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
+            #data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
             data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
-    
-    #Warning!!!!!*************************************************        
-            #this is for a special occasion, don't leave uncommented!!!!!!!!!!!!!!!!!!!!!!
-    #         del data['data']['source_id']
-    #         data['data']['custom_fields']['Response Note'] = ""
-    #         data['data']['tags'].append("Summer Audits")
             
             # delete fields that aren't used on create
             del data['meta'] # metadata about the lead
@@ -349,24 +330,6 @@ def startProgram():
             csvOut.write(str(oldBaseIDs[rowCntr]) + ", " + str(data['data']['id']) + "\n")
             print("Old Base ID: " + str(oldBaseIDs[rowCntr]) + ",\tnew Base ID: " + str(data['data']['id']) + "\n")
             
-            #now we recreate the notes from the old lead for the new lead
-    #         for note in noteData['items']:
-    #             # leave only content, resource_type, and resource_id in data
-    #             del note['meta']
-    #             del note['data']['id']
-    #             del note['data']['created_at']
-    #             del note['data']['updated_at']
-    #             del note['data']['creator_id']
-    #             note['data']['resource_id'] = data['data']['id'] # update the resource_id
-    #         
-    #             noteResponse = requests.post(url='https://api.getbase.com/v2/notes',headers=headers, data=json.dumps(note), verify=True)
-    #             if noteResponse.status_code != 200:
-    #                 print("something went wrong writing notes, got status code " + str(response.status_code) + " for\n " + json.dumps(note) + "\n") # error message
-    #                 file.write("something went wrong writing notes, got status code " + str(response.status_code) + " for\n " + json.dumps(note) + "\n")
-    #                 #failed += 1
-    #                 rowCntr += 1 # ready to move to the next row
-                
-            
             file.write("\nDone with lead-------------------------------------------------------\n\n\n")
             rowCntr += 1 # ready to move to the next row
             passed += 1
@@ -384,7 +347,10 @@ def startProgram():
     errorMsg.set("finished with " + str(passed) + " passed and " + str(failed) + " fails")
     if args.wait == 'no':
         input('Press enter to continue')
-
+    #end main logic of startProg()
+'''
+-initalization code here
+'''
 #load the token
 token = getToken()
 skipGUI = (args.owner != None and args.owner != "" and args.file != None and args.file != "")
