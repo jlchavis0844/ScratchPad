@@ -15,7 +15,7 @@ conn = pyodbc.connect(
 
 
 cursor = conn.cursor()
-str = "SELECT Client.[First Name] FROM Client WHERE Client.[Client#] = -3"
+str = "SELECT Client.[First Name] FROM Client WHERE Client.[Last Name] = 'Chavis'"
 #print(str)
 cursor.execute(str)
 for row in cursor.fetchall():

@@ -3,14 +3,16 @@ Created on Jan 20, 2017
 
 @author: jchavis
 
-This module will take a CSV list of Base IDs for Leads, download the lead data, delete the 
-lead the from Base, and re-import the lead into base
+This module will take a CSV list of Base IDs for Leads, download the lead
+    data, delete the lead the from Base, and re-import the lead into base
 
 full command line support, use -h or --help for options.
     -o or --owner - name of the owner "Bob Saget"
     -f or --file - path to file, defaults to empty ie "c:\apps\myfile.csv"
-    -l or --logdir - path to write the log file to, defaults to "[currentdir]\logs\"
-    -w or --wait - no means the program closes when done, anything else means it waits for user input
+    -l or --logdir - path to write the log file to, defaults to 
+        "[currentdir]\logs\"
+    -w or --wait - no means the program closes when done, anything else
+        means it waits for user input
 
 List of future updates (prefix out for tracking) 
 @todo:DONE 2-14-2017 add proper input checking for numeric, etc
@@ -27,8 +29,10 @@ List of future updates (prefix out for tracking)
 @todo: add log copy to shared log repository
 
 2/1/2017 - started
-2/13/2017 - Finished core functionality with minimum error checking, no correction, no note transfer
-12/12/2017 - resturctured main logic into startProg function, changed owner and source fetching
+2/13/2017 - Finished core functionality with minimum error checking, no
+    correction, no note transfer
+12/12/2017 - resturctured main logic into startProg function, changed
+    owner and source fetching
 '''
 
 import datetime  # for comparing time stamps
@@ -44,16 +48,27 @@ owners = {}
 sources = {}
 
 #take care of our command line arguments
-parser = argparse.ArgumentParser(description='Handle commandline options') # build parser
-parser.add_argument('--owner','-o', dest='owner', help="Optional owner flag", required=False) # owner arg
-parser.add_argument('--file', '-f', dest='file', help="file CSV to process", required=False) # CSV file argument
-parser.add_argument('--logdir', '-l', dest='logdir', help="directory to store logs in", required=False) # log file directory
-parser.add_argument('--wait', '-w', dest='wait', help="No means the program closes after running, else, it waits for key", required=False) # wait arg
-args = parser.parse_args() # fetch args into namespace so we can call args.argName
+ # build parser
+parser = argparse.ArgumentParser(description='Handle commandline options')
+parser.add_argument('--owner','-o', dest='owner', \
+                    help="Optional owner flag", required=False) #owner arg
+# CSV file argument
+parser.add_argument('--file', '-f', dest='file', \
+                    help="file CSV to process", required=False) 
+# log file directory
+parser.add_argument('--logdir', '-l', dest='logdir', \
+                    help="directory to store logs in", required=False) 
+parser.add_argument('--wait', '-w', dest='wait', \
+                    help="No means the program closes after running, " +\
+                    "else, it waits for key", required=False) # wait arg
+
+# fetch args into namespace so we can call args.argName
+args = parser.parse_args() 
 
 
 def getSource(sourceName):
-    """serves as a getter for source that reads sources by the key and returns value
+    """serves as a getter for source that reads sources by the key and 
+        returns value
     all performs blank, space, and null check (returns empty)
     if sources not loaded, it will load them via api
     """
@@ -68,9 +83,12 @@ def getSource(sourceName):
 
 
 def loadSources():
-    """fetches the inital sources list from the baseAPI. This will only load the first 100
-    currently set to use global, could comment it out and simple return source for sources = loadSources()
-    use as loadSources() with the sources loaded into global sources variable as dict
+    """fetches the inital sources list from the baseAPI. This will only 
+        load the first 100
+    currently set to use global, could comment it out and simple return 
+        source for sources = loadSources()
+    use as loadSources() with the sources loaded into global sources 
+        variable as dict
     """
     global token
     if token is None or token == '':
@@ -81,8 +99,8 @@ def loadSources():
                  'Authorization': 'Bearer ' + token}
     
     sURL = "https://api.getbase.com/v2/lead_sources?per_page=100"
-    sresponse = requests.get(url=sURL, headers=sheaders, verify=True)  # send it
-    sresponse_json = json.loads(sresponse.text)  # read in the response JSON
+    sresponse = requests.get(url=sURL, headers=sheaders, verify=True)#send
+    sresponse_json = json.loads(sresponse.text) #read in the response JSON
     items = sresponse_json['items']
     global sources
     sources = {}
@@ -91,26 +109,33 @@ def loadSources():
         
 
 def setPath():
-    """this function is called by the CSV path button to set the logPath variable"""
+    """this function is called by the CSV path button to set the logPath
+        variable"""
     global csv_path, master
-    FILEOPENOPTIONS = dict(defaultextension='.csv', filetypes=[('CSV file', '*.csv'), ('All files', '*.*')])#options
+    FILEOPENOPTIONS = dict(defaultextension='.csv', \
+                           filetypes=[('CSV file', '*.csv'), \
+                                      ('All files', '*.*')])#options
     csv_path = fd.askopenfilename(**FILEOPENOPTIONS)  # choose a file
     csv_text.set(csv_path)
-    errorMsg.set("") # clear and user error message and proper path loading
+    errorMsg.set("") #clear and user error message and proper path loading
     return # go back
 
 def setLog():
-    """this function is called when the user clicks the button to change log path"""
+    """this function is called when the user clicks the button to change 
+        log path"""
     global logPath, master, l2
-    #defPath = r'//NAS3/Users/' + os.getlogin() + r'/Documents' # currently not working
+    #defPath = r'//NAS3/Users/' + os.getlogin() + r'/Documents' 
+    # currently not working
     #tempPath = fd.askdirectory(parent=master, initaldir=defPath)
-    tempPath = tkinter.filedialog.askdirectory() # open dialog to pick the directory
+    tempPath = tkinter.filedialog.askdirectory() # open dialog to pick
+    #the directory
     logPath.set(tempPath) # update the StringVar so user see's new path
     errorMsg.set("") # reset user's error message as needed
     return # go back
 
 def loadOwners():
-    """loads a dict of available owners in the following format {"James Chavis" : 123456789}
+    """loads a dict of available owners in the following format 
+        {"James Chavis" : 123456789}
     loads into owners
     """
     global token
@@ -124,7 +149,7 @@ def loadOwners():
     
     oURL = 'https://api.getbase.com/v2/users?per_page=100&status=active'
     oresponse = requests.get(url=oURL, headers=oheaders, verify = True)
-    oresponse_json = json.loads(oresponse.text)  # read in the response JSON
+    oresponse_json = json.loads(oresponse.text) #read in the response JSON
     items = oresponse_json['items']
     owners = {}
     
@@ -132,7 +157,8 @@ def loadOwners():
         owners[item['data']['name']] = item['data']['id']
 
 def getOwner(ownerName):
-    """this function finds the owner id for the given name and returns owner_id as an int"""
+    """this function finds the owner id for the given name and returns
+        owner_id as an int"""
     global owners
     if not owners or len(owners) == 0:
         loadOwners()
@@ -153,85 +179,102 @@ def today():
 def getToken():
     """this method will attempt to find a file containing the API token"""
     path = ""
-    if(os.path.isfile("C:\\Apps\\NiceOffice\\token")): # search the C:\Apps folder
+    if(os.path.isfile("C:\\Apps\\NiceOffice\\token")):#search C:\Apps 
         path = "C:\\Apps\\NiceOffice\\token" # Found it! Load it
-    elif(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + "\\noe\\token")): # search the network shared NOE folder
+    elif(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + \
+                        "\\noe\\token")): # search shared NOE folder
         path = "\\\\" + os.environ['COMPUTERNAME'] + "\\noe\\token"
-    elif(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + "\\NiceOffice\\token")): # search the OTHER network NOE location
+    elif(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + \
+                        "\\NiceOffice\\token")): #the OTHER NOE location
         path = "\\\\" + os.environ['COMPUTERNAME'] + "\\NiceOffice\\token"
-    else: # if the token is not found in another location, ask the user to find it
-        ctypes.windll.user32.MessageBoxW(0, "A token file was not found in your NOE folder, please choose the token file", "Token File", 0)
-        FILEOPENOPTIONS = dict(filetypes=[('TOKEN file', '*.*')], title=['Choose token file'])
+    else: #token is not found in another location, ask the user to find it
+        ctypes.windll.user32.MessageBoxW(0, "A token file was not "
+                                          +"found in your NOE folder, "
+                                          +"please choose the token file",
+                                           "Token File", 0)
+        FILEOPENOPTIONS = dict(filetypes=[('TOKEN file', '*.*')],
+                               title=['Choose token file'])
         root = tkinter.Tk()  # where to open
         root.withdraw()
         # withdraw()  # hide Frame
-        path = tkinter.filedialog.askopenfilename(**FILEOPENOPTIONS)  # choose a file
+        path = tkinter.filedialog.askopenfilename(**FILEOPENOPTIONS)# pick
     if(path == ""): # if not path was chosen, quit
-        ctypes.windll.user32.MessageBoxW(0, "No file was chosen, quiting", "Token File", 0)
+        ctypes.windll.user32.MessageBoxW(0, "No file was chosen, quiting",
+                                         "Token File", 0)
         exit()
     
     # read in the token from the file and return the token as a string
     file = open(path, 'r', encoding="utf8")
     token = file.read()
     if(len(token) == 0): # if no text was converted
-        print('******************************Warning, token file is empty')
+        print('****************************Warning, token file is empty')
     file.close()
     # print(token)
     return token
 
-#--------------------------------------------------------START PROGRAM ---------------------------------------------------------------------#
+#--------------------------------------------------------START PROGRAM ---
 def startProgram():
     """Main logic of the program"""
     # redundant check
-    if(csv_path is None or csv_path == ""):  # if the file picker is closed
+    if(csv_path is None or csv_path == ""): #if the file picker is closed
         exit("No file chosen")  # shutdown before log is written
         
     ownerID = getOwner(ownerVar.get()) #record new owner ID num
     
     # open log
-    time = datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S')  # get timestamp for the log writing.
+    # get timestamp for the log writing.
+    time = datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S')  
     
-    #weird problem with paths not ending in \ sometimes, lets hack around it
+    #problem with paths not ending in \ sometimes, lets hack around it
     pathList = list(logPath.get())
-    if pathList[len(pathList)-1] != '\\' or pathList[len(pathList)-1] != '/':
+    if pathList[len(pathList)-1] !='\\' or\
+       pathList[len(pathList)-1] != '/':
+        
         if '\\' in pathList:
             logPath.set(logPath.get() + '\\')
         else:
             logPath.set(logPath.get() + '/')
     
-    file = open(logPath.get() + 'Refresh-Lead-' + time + '.txt', 'w+')  # create and open the log file for this session
-    print("making log file " + logPath.get() + 'Refresh-Lead-' + time + '.txt')
-    file.write('this log was written to ' + logPath.get() + 'Refresh-Lead-' + time + '.txt\n')
+    # create and open the log file for this session
+    file = open(logPath.get() + 'Refresh-Lead-' + time + '.txt', 'w+')  
+    print("making log file " + logPath.get() + 'Refresh-Lead-' 
+          + time + '.txt')
+    file.write('this log was written to ' + logPath.get() 
+               + 'Refresh-Lead-' + time + '.txt\n')
     file.write("starting leads update at " + time + '\n')  # write to log
     file.write("using CSV: " + csv_path + '\n')
     file.write("owner is set to " + ownerVar.get()+ '\n')
     file.write("log path set to " + logPath.get()+ '\n')
-    file.write("this action is being ran by " + os.getlogin() + " on computer " + os.environ['COMPUTERNAME']+ '\n')
+    file.write("this action is being ran by " + os.getlogin() 
+               + " on computer " + os.environ['COMPUTERNAME']+ '\n')
     file.write("command line args: " + str(args) + "\n")
     
     #lets make a csv file to track oldIDs to newIDs easily
-    csvOut = open(logPath.get()+ 'Refresh-Lead-' + time + '-IDs.csv', 'w+')
+    csvOut = open(logPath.get()+'Refresh-Lead-' + time + '-IDs.csv', 'w+')
     csvOut.write("oldIDs, newIDs\n") # header
     
     oldBaseIDs = [] # this will hold the id's of the A or TDS A leads
     failed = 0 # track failures
     passed = 0 # track success
     
-    # Now we open the CSV containing the id's of the leads we are going to work with
+    # Now we open the CSV containing the id's of the leads we are going
+    #    to work with
     # The CSV should look something like below, read from column 0:
     # |   id   |
     # | 123654 |
     # | 446588 |
-    with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  # open file as UTF-8
-        reader = csv.reader(csvfile, delimiter=',')  # makes the file a csv reader
-        rowCntr = -1  # start index, will track which row the process is on
+    with open(csv_path, encoding="utf8", newline='',
+              errors='ignore') as csvfile:  # open file as UTF-8
+        # makes the file a csv reader
+        reader = csv.reader(csvfile, delimiter=',')
+        rowCntr = -1 #start index, will track which row the process is on
         
         for row in reader: #reader contains all our records
             rowCntr += 1 #increment our tracker, row0 is the header row
             if(rowCntr == 0): #skip the header row
                 continue # skip
-            
-            if not row: # if the row is empty (usually on the last row), skip ahead
+            # if the row is empty (usually on the last row), skip ahead
+            if not row: 
                 continue
             
             #if not header, lets take a look at the data
