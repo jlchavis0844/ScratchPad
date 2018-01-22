@@ -112,10 +112,14 @@ with open(csv_path, encoding="utf8", newline='', errors = 'ignore') as csvfile: 
         print('found the following tags online: ' + str(APItags))
         file.write("Starting with ID: " + row[1] + '\n')
         file.write('found the following tags online: ' + str(APItags) + '\n')
-        if 'Summer Audits' in APItags:
-            APItags.remove('Summer Audits')
-        print("removed Summer Audit, now: " + str(APItags) + '\n')
+        
+#HERE WE CHANGE TAGS ARRAY###############################################
+        remStr = r'M/H Phone'
+        if remStr in APItags:
+            APItags.remove(remStr)
+        print("removed " + remStr + ", now: " + str(APItags) + '\n')
         file.write("Cleaned: "  + str(APItags) + '\n')
+#HERE WE CHANGE TAGS ARRAY###############################################
         
         payload = {}
         payload['data'] = {}

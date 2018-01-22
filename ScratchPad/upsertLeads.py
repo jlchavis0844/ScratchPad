@@ -206,6 +206,7 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         custom_fields["Client ID"] = row[37]
         custom_fields["Agent ID"] = row[38]
         custom_fields["Response Note"] = row[39]
+        data["status"] = "Incoming"
         
         #add the tags as a JSON array and upserting seems to clear all Tags for some reason
         #TODO: fix tag JSON array not working on upsert, implement tag update script logic using import tagUpdate

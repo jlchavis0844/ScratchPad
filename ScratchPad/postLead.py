@@ -211,6 +211,9 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         custom_fields["Agent ID"] = row[38]
         custom_fields["Response Note"] = row[39]
         
+        #Change status from the default of Available to Incoming
+        data["status"] = "Incoming"
+        
         #add the tags as a JSON array 
         #TODO: fix tag JSON array not working on
         if(row[40] != "" or row[40] is None):
