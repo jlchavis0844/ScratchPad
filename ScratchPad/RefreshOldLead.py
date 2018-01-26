@@ -253,7 +253,7 @@ def startProgram():
     csvOut = open(logPath.get()+'Refresh-Lead-' + time + '-IDs.csv', 'w+')
     csvOut.write("oldIDs, newIDs\n") # header
     
-    oldBaseIDs = [] # this will hold the id's of the A or TDS A leads
+    oldBaseIDs = [] # this will hold the id's of Leads
     failed = 0 # track failures
     passed = 0 # track success
     
@@ -332,9 +332,12 @@ def startProgram():
             data['data']['owner_id'] = ownerID # set the owner to choosen ID
             
     #NEW LEAD TYPE GOES HERE!!!!!!!!!!!!!!!!
-            #data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
+            data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
             data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
             
+    #CHANGE STATUS TO INCOMMING
+            data['data']['status'] = "Incoming"
+    
             # delete fields that aren't used on create
             del data['meta'] # metadata about the lead
             del data['data']['id'] # a new id will be assigned
@@ -373,7 +376,7 @@ def startProgram():
             csvOut.write(str(oldBaseIDs[rowCntr]) + ", " + str(data['data']['id']) + "\n")
             print("Old Base ID: " + str(oldBaseIDs[rowCntr]) + ",\tnew Base ID: " + str(data['data']['id']) + "\n")
             
-            file.write("\nDone with lead-------------------------------------------------------\n\n\n")
+            file.write("\nDone with lead" + str(rowCntr) + "-------------------------------------------------------\n\n\n")
             rowCntr += 1 # ready to move to the next row
             passed += 1
             
