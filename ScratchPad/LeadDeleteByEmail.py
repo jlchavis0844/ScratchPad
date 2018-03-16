@@ -94,7 +94,7 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvIn:
     print("opened " + csv_path)
     
     for row in reader:
-        rowCntr += 1
+        rowCntr += 1 # skip first row
         
         if not row:
             continue

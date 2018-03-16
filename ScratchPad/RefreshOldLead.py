@@ -331,8 +331,10 @@ def startProgram():
             # now we can change the info, and push it back to base as a B lead
             data['data']['owner_id'] = ownerID # set the owner to choosen ID
             
-    #NEW LEAD TYPE GOES HERE!!!!!!!!!!!!!!!!
-            data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
+#NEW LEAD TYPE GOES HERE!!!!!!!!!!!!!!!!
+            #data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
+            data['data']['custom_fields']['New Lead Type'] = "TDS-A Lead" 
+            
             data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
             
     #CHANGE STATUS TO INCOMMING

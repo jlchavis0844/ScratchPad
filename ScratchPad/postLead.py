@@ -4,7 +4,7 @@ Added token file implementation
 Added Local token, checks C:\Apps before doing to the network
 Added Tag reading on column 41 , row[40] - 12/7/2016
 Added error check to skip empty rows, better comments - 12/21/2016
-
+Default status explicitly set to Incoming - 1/22/2018
 TODO: Fix tagging error, JSON format problem?
 @author: jchavis
 '''
@@ -219,6 +219,8 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         if(row[40] != "" or row[40] is None):
             tagVal.append(row[40]) # read in value of tag ( for not just one value)
             data['tags'] = tagVal # write array to json field data : {...'tags' : ['value']...}
+            
+        custom_fields["Last Response"] = row[41]
         
         #------------------------------------Check for empty rows--------------------------------------
         # if a lead does not have a first and a list name, count this as a blank row and skip
