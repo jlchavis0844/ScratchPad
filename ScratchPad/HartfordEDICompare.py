@@ -1,75 +1,119 @@
-import os, sys, csv, json, requests
-from pathlib import Path
+'''
+This module loads in two | (pipe) delimited files, removes the first and
+last lines (header and footer) and then compares the remaining lines
+to see if there are differences. If a line is found to be different, 
+all lines are then rechecked token (split on pipe) to find the difference.
+if a line is different, all tokens for that line are checked.
+lines are sorted by name if differences are found.
+TODO: only check lines that are different to remove redundancy.
+'''
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
 
-token = ''
-sources = {}
-owners = {}
+class Line:
+    def __init__(self, inStr):
+        self.tokens = inStr.split('|')
+        self.id = self.tokens[5]
+        self.name = (self.tokens[8] + ' ' + self.tokens[7]).strip()
+        self.line = inStr
 
-def getToken():
-    path = ""
-    if(os.path.isfile("C:\\Apps\\NiceOffice\\token")):
-        path = "C:\\Apps\\NiceOffice\\token"
-    elif(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + "\\noe\\token")):
-        path = "\\\\" + os.environ['COMPUTERNAME'] + "\\noe\\token"
-    elif(os.path.isfile("\\\\" + os.environ['COMPUTERNAME'] + "\\NiceOffice\\token")):
-        path = "\\\\" + os.environ['COMPUTERNAME'] + "\\NiceOffice\\token"
+def LineKey(Line):
+    return Line.name
+
+Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+filename = askopenfilename(initialdir = "C:\\Hartford_prod\\",title = "open file 1") # show an "Open" dialog box and return the path to the selected file
+if not filename:
+    exit()
+    
+with open(filename, "r") as fp:
+    lines1 = fp.readlines()
+    
+filename = askopenfilename(initialdir = "C:\\Hartford_prod\\",title = "open file 2")
+if not filename:
+    exit()
+
+with open(filename,'r') as fp:
+    lines2 = fp.readlines()
+    
+
+lines1.pop(0)
+lines1 = lines1[:-1]
+lines2.pop(0)
+lines2.pop(len(lines2)-1)
+
+useList1 = len(lines1) >= len(lines2)
+# for idx, val in enumerate(lines1):
+#     if idx != 0 and (idx + 1) < len(lines1):
+#         print(Line(val).name)
+go = len(lines1) == len(lines2)
+if useList1:
+    for idx, val in enumerate(lines1):
+        if go and (idx + 1) < len(lines1) \
+        and (idx + 1) < len(lines1) \
+        and (idx + 1) < len(lines2):
+            if lines1[idx] != lines2[idx]:
+                print("mismatch:\n" + lines1[idx] + '\n' + lines2[idx])
+                go = False
+else:
+    for idx, val in enumerate(lines2):
+        if go and (idx + 1) < len(lines2) \
+        and (idx + 1) < len(lines2) \
+        and (idx + 1) < len(lines1):
+            if lines1[idx] != lines1[idx]:
+                print("mismatch:\n" + lines2[idx] + '\n' + lines1[idx])
+                go = False
+
+if not go:
+    print('going to find what is different')
+    
+    l1o = [];
+    for inx, val in enumerate(lines1):
+        thisLine = Line(val)
+        l1o.append(thisLine)
+        
+    l2o = [];
+    for inx, val in enumerate(lines2):
+        thisLine = Line(val)
+        l2o.append(thisLine)
+
+    l1o_sorted = sorted(l1o, key=LineKey)
+    l2o_sorted = sorted(l2o, key=LineKey)
+    
+    cntr = 0;
+    if useList1:
+        try:
+            while cntr < len(l1o_sorted):
+                if l1o_sorted[cntr].line != l2o_sorted[cntr].line:
+                    tcntr = 0
+                    while tcntr < len(l1o_sorted[cntr].tokens):
+                        if str(l1o_sorted[cntr].tokens[tcntr]) != str(l2o_sorted[cntr].tokens[tcntr]):
+                            print ("for " + l2o_sorted[cntr].name + ": \"" + str(l2o_sorted[cntr].tokens[tcntr]) + "\" != \"" \
+                                   + str(l1o_sorted[cntr].tokens[tcntr]) + "\"")
+                        tcntr = tcntr + 1
+                cntr = cntr + 1
+        except:
+            print("#ERROR")
     else:
-        ctypes.windll.user32.MessageBoxW(0, "A token file was not found in your NOE folder, please choose the token file", "Token File", 0)
-        FILEOPENOPTIONS = dict(filetypes=[('TOKEN file', '*.*')], title=['Choose token file'])
-        root = tkinter.Tk()  # where to open
-        root.withdraw()
-        # withdraw()  # hide Frame
-        path = fd.askopenfilename(**FILEOPENOPTIONS)  # choose a file
-    if(path == ""):
-        ctypes.windll.user32.MessageBoxW(0, "No file was chosen, quiting", "Token File", 0)
-        exit()
-    
-    file = open(path, 'r', encoding="utf8")
-    token = file.read()
-    file.close()
-    # print(token)
-    return token
+        try:
+            while cntr < len(l2o_sorted):
+                if l2o_sorted[cntr].line != l1o_sorted[cntr].line:
+                    tcntr = 0
+                    while tcntr < len(l1o_sorted[cntr].tokens):
+                        if str(l1o_sorted[cntr].tokens[tcntr]) != str(l2o_sorted[cntr].tokens[tcntr]):
+                            print ("for " + l2o_sorted[cntr].name + ": \"" + str(l2o_sorted[cntr].tokens[tcntr]) + \
+                                   "\" != \"" + str(l1o_sorted[cntr].tokens[tcntr]) + "\"")
+                        tcntr = tcntr + 1
+                cntr = cntr + 1
+        except:
+            print("#ERROR")
 
-def loadOwners():
-    global token
-    global owners
-    if token is None or token == '':
-        token = getToken()
-    
-    oheaders = {'Accept': 'application/json',
-                 'Content-Type': 'application/json',
-                 'Authorization': 'Bearer ' + token}
-    
-    oURL = 'https://api.getbase.com/v2/users?per_page=100&status=active'
-    oresponse = requests.get(url=oURL, headers=oheaders, verify = True)
-    oresponse_json = json.loads(oresponse.text)  # read in the response JSON
-    items = oresponse_json['items']
-    owners = {}
-    
-    for item in items:
-        owners[item['data']['name']] = item['data']['id']
-
-def loadSources():
-    global token
-    global sources
-    if token is None or token == '':
-        token = getToken()
-    
-    sheaders = {'Accept': 'application/json',
-                 'Content-Type': 'application/json',
-                 'Authorization': 'Bearer ' + token}
-    
-    sURL = "https://api.getbase.com/v2/lead_sources?per_page=100"
-    sresponse = requests.get(url=sURL, headers=sheaders, verify=True)  # send it
-    sresponse_json = json.loads(sresponse.text)  # read in the response JSON
-    items = sresponse_json['items']
-    global sources
-    sources = {}
-    for item in items:
-        sources[item['data']['name']] = item['data']['id']
-
-loadSources()
-loadOwners()
-print(sources)
-print(owners)
-
+if not go:
+    input("Differences found. Press Enter to exit...")
+else:
+    print("All done. No differences found.")
+            
+            
+            
+            
+            
+            

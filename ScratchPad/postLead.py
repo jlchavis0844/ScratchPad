@@ -6,6 +6,8 @@ Added Tag reading on column 41 , row[40] - 12/7/2016
 Added error check to skip empty rows, better comments - 12/21/2016
 Default status explicitly set to Incoming - 1/22/2018
 TODO: Fix tagging error, JSON format problem?
+
+10/4/2018 - rewrote tag pat to split tag field by , to allow multiple tags at once.
 @author: jchavis
 '''
 
@@ -16,11 +18,12 @@ from datetime import datetime  # for comparing time stamps
 
 owners = {}
 sources = {}
+availableTags = []
 
 merged = []
 mergeCount = 0;
 
-#This function will check for a text file called token which holds the Base API Token in plain text
+# This function will check for a text file called token which holds the Base API Token in plain text
 # this token will be loaded, read, and stored as the token variable that is returned
 # the function will read this computer's name and then check the network shared drive locations
 #     \\NAME\now\token
@@ -85,7 +88,41 @@ def loadOwners():
     
     for item in items:
         owners[item['data']['name']] = item['data']['id']
-
+        
+        
+# loads a dict of existing tags since tags must match, case sensitive existing or create new
+# example if testTag exists, PUT for TestTag or TESTTAG or testtag will not work.
+# if they testTag does not exist and PUT testTag creates new tag
+def loadTags():
+    global token
+    global availableTags
+    tempSet = set()
+    
+    if token is None or token == '':
+        token = getToken()
+    
+    oheaders = {'Accept': 'application/json',
+                 'Content-Type': 'application/json',
+                 'Authorization': 'Bearer ' + token}
+    
+    oURL = 'https://api.getbase.com/v2/tags?per_page=100'
+    oresponse = requests.get(url=oURL, headers=oheaders, verify = True)
+    oresponse_json = json.loads(oresponse.text)  # read in the response JSON
+    items = oresponse_json['items']
+    
+    for item in items:
+            tempSet.add(item["data"]["name"])
+            
+    while oresponse_json["meta"]["count"] == 100:
+        oURL = oresponse_json["meta"]["links"]["next_page"]
+        oresponse = requests.get(url=oURL, headers=oheaders, verify = True)
+        oresponse_json = json.loads(oresponse.text)  # read in the response JSON
+        items = oresponse_json['items']
+        
+        for item in items:
+            tempSet.add(item["data"]["name"])
+    
+    availableTags = list(tempSet)
 # this function finds the owner id for the given name and returns owner_id as an int
 def getOwner(ownerName):
     global owners
@@ -99,7 +136,7 @@ def getOwner(ownerName):
 
 # serves as a getter for source that reads sources by the key and returns value
 # all performs blank, space, and null check (returns empty)
-#if sources not loaded, it will load them via api
+# if sources not loaded, it will load them via api
 def getSource(sourceName):
     global sources
     if not sources or len(sources) == 0:
@@ -110,9 +147,9 @@ def getSource(sourceName):
     else:
         return sources[sourceName]
 
-#fetches the inital sources list from the baseAPI. This will only load the first 100
-#currently set to use global, could comment it out and simple return source for sources = loadSources()
-#use as loadSources() with the sources loaded into global sources variable as dict
+# fetches the inital sources list from the baseAPI. This will only load the first 100
+# currently set to use global, could comment it out and simple return source for sources = loadSources()
+# use as loadSources() with the sources loaded into global sources variable as dict
 def loadSources():
     global token
     if token is None or token == '':
@@ -154,6 +191,7 @@ file.write("using CSV: " + csv_path + '\n')
 
 with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  # open file as UTF-8
     reader = csv.reader(csvfile, delimiter=',')  # makes the file a csv reader
+    #loadTags()
     
     print('**********************************************************************************')
     rowCntr = -1  # start index, will track which row the process is on
@@ -168,6 +206,7 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         custom_fields = {}  # custom fields JSON object
         address = {}  # the address json object
         tagVal = [] # the array to put into data as an array of tags
+        
         
         #Lets load the CSV values into JSON objects data, address, or custom
         data["email"] = row[10]  # each column is mapped to a json object 
@@ -211,15 +250,28 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         custom_fields["Agent ID"] = row[38]
         custom_fields["Response Note"] = row[39]
         
-        #Change status from the default of Available to Incoming
+        # Change status from the default of Available to Incoming
         data["status"] = "Incoming"
         
-        #add the tags as a JSON array 
-        #TODO: fix tag JSON array not working on
+        # add the tags as a JSON array 
+        # TODO: fix tag JSON array not working on
         if(row[40] != "" or row[40] is None):
-            tagVal.append(row[40]) # read in value of tag ( for not just one value)
+            tagArray = row[40].replace("\"","").replace("\'","").split(",")
+            for tempTag in tagArray:
+#                 if tempTag.strip() not in availableTags:
+#                     if tempTag.strip().upper() in availableTags.upper():
+#                         lIndex = availableTags.upper().index(tempTag.strip().upper())
+#                         print("warning: case doesn't match on " + tempTag + ', should be ' + availableTags[lIndex])
+#                         tagVal.append(availableTags[lIndex])
+#                     else:
+#                         tagVal.append(tempTag.strip())
+#                 else:
+#                     print("warning: tag doesn't exist, new tag " + tempTag)    
+#                     tagVal.append(tempTag.strip()) # read in value of tag ( for not just one value)
+                tagVal.append(tempTag.strip()) # read in value of tag ( for not just one value)
             data['tags'] = tagVal # write array to json field data : {...'tags' : ['value']...}
             
+        #---------------------------------------Add Last Response Date    
         custom_fields["Last Response"] = row[41]
         
         #------------------------------------Check for empty rows--------------------------------------
@@ -232,11 +284,11 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
             if(data[x] != ""):  # only copy the non-"" values
                 temp[x] = data[x]
         
-        data = temp #write the non-blank values to the data list so temp is new data
+        data = temp # write the non-blank values to the data list so temp is new data
         
         temp = {}  # repeat above process of copying all the non-blank values to temp
-        for x in custom_fields:#go through the whole loop
-            if(custom_fields[x] != ""):#if not blank
+        for x in custom_fields:# go through the whole loop
+            if(custom_fields[x] != ""):# if not blank
                 temp[x] = custom_fields[x]# copy to temp
         
         custom_fields = temp# add to custom_fields which is a list that will be added to data list

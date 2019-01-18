@@ -14,6 +14,7 @@ import tkinter.filedialog as fd  # for picking the file
 from datetime import datetime
 from dateutil.parser import parse
 from win32verstamp import stamp
+from win32api import BeginUpdateResource
 
 '''
 A simple function that returns whether the given substring can be 
@@ -192,8 +193,8 @@ def checkECI(tokens):
         errors+=1
                 
     if tokens[6] != '840':
-        file.write('ERROR: Invalid country code: ' + tokens[5] + '\n')
-        print('ERROR: Invalid country code: ' + tokens[5] + '\n')
+        file.write('ERROR: Invalid country code: ' + tokens[6] + '\n')
+        print('ERROR: Invalid country code: ' + tokens[6] + '\n')
         errors+=1
 
     if len(tokens[9]) != 0:#s'ok if it be null
@@ -483,7 +484,8 @@ def checkFTR(tokens):
 '''
 Start Main script here
 '''
-path = os.path.dirname(__file__)  # get current path
+path = 'H:\\'  # get current path
+print(path)
 # get timestamp for the log writing.
 time = datetime.now().strftime('%Y-%m-%d_%H%M%S') 
     

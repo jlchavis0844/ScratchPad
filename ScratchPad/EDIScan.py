@@ -71,7 +71,8 @@ def checkDate(line, start, stop):
     except ValueError:
         return False
 
-path = os.path.dirname(__file__)  # get current path
+#path = os.path.dirname(__file__)  # get current path
+path = 'H:\\'
 # get timestamp for the log writing.
 time = datetime.now().strftime('%Y-%m-%d_%H%M%S') 
     

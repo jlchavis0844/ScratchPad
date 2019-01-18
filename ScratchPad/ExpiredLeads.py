@@ -106,7 +106,8 @@ def getToken():
 
 # open log
 time = datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S')  # get timestamp for the log writing.
-path = os.path.dirname(__file__)  # get current path
+#path = os.path.dirname(__file__)  # get current path
+
 file = open(path + '\\logs\\aLeadExpire' + time + '.txt', 'w+')  # create and open the log file for this session
 token = getToken()
 #url = "https://api.getbase.com/v2/leads?page=1&per_page="+PER_PAGE+"&owner_id=959081"

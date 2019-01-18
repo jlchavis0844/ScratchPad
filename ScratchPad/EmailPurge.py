@@ -42,7 +42,8 @@ def getToken():
 time = datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S') # get timestamp for the log writing.
 time = time.replace(" ", "_") # removes spaces from timestamp, not needed
 
-path = os.path.dirname(__file__) # get current path
+#path = os.path.dirname(__file__) # get current path
+path = 'H:\\'
 if(path == "" or path == None):
     path = os.getcwd()
 print("Starting from " + path)

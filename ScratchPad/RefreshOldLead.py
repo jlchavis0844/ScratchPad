@@ -6,6 +6,9 @@ Created on Jan 20, 2017
 This module will take a CSV list of Base IDs for Leads, download the lead
     data, delete the lead the from Base, and re-import the lead into base
 
+@attention: Set to clear all tags and reapply OTJT and M/H as needed
+@attention: Sets new lead type to B-Lead or TDS-B lead based on old data
+
 full command line support, use -h or --help for options.
     -o or --owner - name of the owner "Bob Saget"
     -f or --file - path to file, defaults to empty ie "c:\apps\myfile.csv"
@@ -21,7 +24,6 @@ List of future updates (prefix out for tracking)
 @todo:Done option to hold open console on compltion.
 @todo:Done option to skip GUI 
 @todo: exception handling on all request calls
-@todo: Seriously, get grequests for multithreading working.
 @todo: convert simple text dump of json to CSV export?
 @todo:Done look into resource cleanup of file and reader.
 @todo: remove redundant token searching paths
@@ -333,7 +335,13 @@ def startProgram():
             
 #NEW LEAD TYPE GOES HERE!!!!!!!!!!!!!!!!
             #data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
-            data['data']['custom_fields']['New Lead Type'] = "TDS-A Lead" 
+            #data['data']['custom_fields']['New Lead Type'] = "TDS-A Lead" 
+            
+            if(data['data']['custom_fields']['New Lead Type'] != None and \
+               "TDS" in data['data']['custom_fields']['New Lead Type']):
+                data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead"
+            else:
+                data['data']['custom_fields']['New Lead Type'] = "B Lead"
             
             data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
             
@@ -346,6 +354,26 @@ def startProgram():
             del data['data']['created_at'] # create and update dates are not needed
             del data['data']['updated_at']
             del data['data']['creator_id']
+            
+            #refresh tags, only add M/H Phone if mobile or home is populated
+            del data['data']['tags']
+            tagList = []
+            
+            if 'mobile' in data['data'] and data['data']['mobile'] is not None:
+                tagList.append('M/H Phone')
+            elif 'Home Phone' in data['data']['custom_fields'] and data['data']['custom_fields'] is not None:
+                tagList.append('M/H Phone')
+            
+            tagList.append('OTJT');
+            data['data']['tags'] = tagList
+            
+            #END REFRESH TAGS
+            
+            #ENSURE TDS IS YES
+            data['data']['custom_fields']['TDS'] = 'Yes'
+            
+            if "unqualified_reason_id" in data:
+                del data['data']['unqualified_reason_id']
             
             # let's delete the lead
             response = requests.request('DELETE', url=currURL, headers=headers)
@@ -363,8 +391,8 @@ def startProgram():
             
             # check for errors and notify if needed
             if response.status_code != 200:
-                print("something went wrong creating a lead, got status code " + str(response.status_code))
-                file.write("something went wrong creating a lead, got status code " + str(response.status_code))
+                print("something went wrong creating a lead, got status code " + str(response.status_code) + '\n')
+                file.write("something went wrong creating a lead, got status code " + str(response.status_code)+ '\n')
                 failed += 1
                 rowCntr += 1 # ready to move to the next row
                 print(json.dumps(data))
@@ -410,7 +438,7 @@ if skipGUI == True:
 iconPath = r'\\nas3\Shared\RALIM\logos\base-crm16and64.ico' # path to ICON
 
 logPath = tkinter.StringVar(master) # default path to the log
-logPath.set(os.path.dirname(__file__) + '\\logs\\' ) # get current path
+logPath.set( 'h:\\logs\\' ) # get current path
 if args.logdir != None and args.logdir != "":
     logPath.set(args.logdir.replace('"','\\'))
     print('log path set to ' + logPath.get())

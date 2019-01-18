@@ -40,6 +40,7 @@ import tkinter
 #import grequests # can't use because of dependency failing
 
 owners = {} #loaded at start from csv during the GUI build
+oldBaseIDs = []
 
 #take care of our command line arguments
 parser = argparse.ArgumentParser(description='Handle commandline options') # build parser
@@ -169,7 +170,6 @@ def makeItSo():
     file.write("command line args: " + str(args) + "\n")
     
     
-    oldBaseIDs = [] # this will hold the id's of the A or TDS A Contacts (probably, maybe)
     failed = 0 # track failures
     passed = 0 # track success
     
@@ -246,20 +246,20 @@ def makeItSo():
     
             # we found the ID if we have gotten this far
             # let's check for any notes associated with this contact using the following assumptions: at most 1 page of 100 notes
-            noteURL = "https://api.getbase.com/v2/notes?per_page=100&page=1&resource_id=" + str(oldBaseIDs[rowCntr])
-            qString = {"resource_id" : str(oldBaseIDs[rowCntr]), "page": "1", "per_page" : "100"} # build API params
-            noteResponse = requests.request("GET", noteURL, data = "", headers=headers, params=qString)
-            
-            if noteResponse.status_code != 200:
-                print("something went wrong getting notes, got status code " + str(noteResponse.status_code)) # error message
-                file.write("something went wrong getting notes, got status code " + str(noteResponse.status_code) + " process will continue\n")
-                failed += 1
-                rowCntr += 1 # ready to move to the next row
-                #continue # Don't stop here since notes aren't a deal breaker
-            else:
-                noteData = json.loads(noteResponse.text)
-                #print("found " + str(noteData['meta']['count']) + " notes\n")
-                file.write("found " + str(noteData['meta']['count']) + " notes\n")     
+#             noteURL = "https://api.getbase.com/v2/notes?per_page=100&page=1&resource_id=" + str(oldBaseIDs[rowCntr])
+#             qString = {"resource_id" : str(oldBaseIDs[rowCntr]), "page": "1", "per_page" : "100"} # build API params
+#             noteResponse = requests.request("GET", noteURL, data = "", headers=headers, params=qString)
+#             
+#             if noteResponse.status_code != 200:
+#                 print("something went wrong getting notes, got status code " + str(noteResponse.status_code)) # error message
+#                 file.write("something went wrong getting notes, got status code " + str(noteResponse.status_code) + " process will continue\n")
+#                 failed += 1
+#                 rowCntr += 1 # ready to move to the next row
+#                 #continue # Don't stop here since notes aren't a deal breaker
+#             else:
+#                 noteData = json.loads(noteResponse.text)
+#                 #print("found " + str(noteData['meta']['count']) + " notes\n")
+#                 file.write("found " + str(noteData['meta']['count']) + " notes\n")     
             
     
             #now we have to check for any deals associated with this contact.
@@ -284,10 +284,11 @@ def makeItSo():
             #let's go through each deal found with the following steps
             #-check if the deal is won (4517462). If won, break loop and go to next contact
             #-delete the lead. if delete fails, break loop and go to next contact
-            lostIDs = [4517462] # only for 'lost'
+            lostIDs = [4517464, 5520031, 5353324, 5353325] # only for 'lost' deals
             for currDeal in dealData['items']:
                 dealFlag = False
-                if currDeal['data']['stage_id'] == 4517462:
+                print("Stage of this deal = " + str(currDeal['data']['stage_id']))
+                if currDeal['data']['stage_id'] not in lostIDs:
                     print('deal ' + str(currDeal['data']['id']) + ' is not lost for contact ' + str(currID) + '\n')
                     print('Skipping ' + str(currID))
                     file.write('deal ' + str(currDeal['data']['id']) + ' is not lost for contact ' + str(currID) + '\n')
@@ -320,9 +321,15 @@ def makeItSo():
     
             # now we can change the info, and push it back to base as a B lead
             data['data']['owner_id'] = ownerID # set the owner to choosen ID
-            data['data']['custom_fields']['New Lead Type'] = "B Lead" # change the lead type to B type
+            #data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
             data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
             
+            if data['data']['custom_fields']['New Lead Type'] is not None:
+                if "TDS-A" in data['data']['custom_fields']['New Lead Type']:
+                    data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead"
+                elif data['data']['custom_fields']['New Lead Type'] == "A Lead":
+                    data['data']['custom_fields']['New Lead Type'] = "B Lead"
+                                
             # delete fields that aren't used on create
             del data['meta'] # metadata about the lead
             del data['data']['id'] # a new id will be assigned
@@ -335,7 +342,16 @@ def makeItSo():
             del data['data']['is_organization']
             del data['data']['name']
             del data['data']['parent_organization_id']
-            tagList = data['data']['tags']
+            del data['data']['billing_address']
+            del data['data']['shipping_address']
+            
+            tagList = []
+            if data['data']['mobile'] is not None:
+                tagList.append('M/H Phone')
+            elif "Home Phone" in data['data']['custom_fields'] and \
+            data['data']['custom_fields']['Home Phone'] is not None:
+                    tagList.append('M/H Phone')
+                
             tagList.append('OTJT')
             data['data']['tags'] = tagList
     
@@ -371,25 +387,25 @@ def makeItSo():
             file.write("\nOld Base ID: " + str(oldBaseIDs[rowCntr]) + "\tnew Base ID: " + str(data['data']['id']) + "\n")
             print("Old Base ID: " + str(oldBaseIDs[rowCntr]) + ",\tnew Base ID: " + str(data['data']['id']) + "\n")
             
-            #now we recreate the notes from the old lead for the new lead
-            for note in noteData['items']:
-                # leave only content, resource_type, and resource_id in data
-                del note['meta']
-                del note['data']['id']
-                del note['data']['created_at']
-                del note['data']['updated_at']
-                del note['data']['creator_id']
-                note['data']['resource_id'] = data['data']['id'] # update the resource_id
-            
-                noteResponse = requests.post(url='https://api.getbase.com/v2/notes',headers=headers, data=json.dumps(note), verify=True)
-                if noteResponse.status_code != 200:
-                    print("something went wrong writing notes, got status code " + str(response.status_code) + " for\n " + json.dumps(note) + "\n") # error message
-                    file.write("something went wrong writing notes, got status code " + str(response.status_code) + " for\n " + json.dumps(note) + "\n")
-                    #failed += 1
-                    rowCntr += 1 # ready to move to the next row
+#             #now we recreate the notes from the old lead for the new lead
+#             for note in noteData['items']:
+#                 # leave only content, resource_type, and resource_id in data
+#                 del note['meta']
+#                 del note['data']['id']
+#                 del note['data']['created_at']
+#                 del note['data']['updated_at']
+#                 del note['data']['creator_id']
+#                 note['data']['resource_id'] = data['data']['id'] # update the resource_id
+#             
+#                 noteResponse = requests.post(url='https://api.getbase.com/v2/notes',headers=headers, data=json.dumps(note), verify=True)
+#                 if noteResponse.status_code != 200:
+#                     print("something went wrong writing notes, got status code " + str(response.status_code) + " for\n " + json.dumps(note) + "\n") # error message
+#                     file.write("something went wrong writing notes, got status code " + str(response.status_code) + " for\n " + json.dumps(note) + "\n")
+#                     #failed += 1
+#                     rowCntr += 1 # ready to move to the next row
                 
             
-            file.write("\nDone with lead-------------------------------------------------------\n\n\n")
+            file.write("\nDone with contact-------------------------------------------------------\n\n\n")
             rowCntr += 1 # ready to move to the next row
             passed += 1
             
@@ -401,7 +417,7 @@ def makeItSo():
                 errorMsg.set("Working:" + "{0:.2f}".format((finished/ len(oldBaseIDs))*100) + "% Done, Remaining(h:m:s): " + remaining)
                 master.update()
                 print("Working:" + "{0:.2f}".format((finished/ len(oldBaseIDs))*100) + "% Done, Remaining(h:m:s): " + remaining)
-                print('\nDone with lead ' + str(currID) + '--------------------------------------------------------\n\n' )
+                print('\nDone with contact ' + str(data['data']['id']) + '--------------------------------------------------------\n\n' )
             
     print("Passed: " + str(passed) + '\n')
     print("failed: " + str(failed) + '\n')
@@ -411,7 +427,7 @@ def makeItSo():
     file.write('done at ' + datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S'))
     file.close()
     errorMsg.set("finished with " + str(passed) + " passed and " + str(failed) + " fails")
-    if args.wait != 'no':
+    if args.wait == 'yes':
         input('Press enter to continue')
     sys.exit()  
 

@@ -148,7 +148,8 @@ while(cont == True):
 
 # make a special CSV of the tags 
 if(len(rows) > 0):  # if tags were detected
-    with open(os.getcwd() + '\\tags_' + time + '.csv', 'w') as f:  # open csv
+    
+    with open('H:\\logs\\tags_' + time + '.csv', 'w') as f:  # open csv
         w = csv.DictWriter(f, rows[0].keys(), lineterminator='\n')  # make writer
         w.writeheader()  # write header row
         for row in rows:  # write the merges to the merge CSV

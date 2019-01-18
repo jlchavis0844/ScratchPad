@@ -95,7 +95,7 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         # now that we have passed the rigorous error checking, build the note create call
         payload = {
             'data': {
-                'resource_type': str(row[1]), # lead or contact
+                'resource_type': str(row[1]).lower(), # lead or contact
                 'resource_id': int(row[0]), # Base ID
                 'content': str(row[2]) # the string of the note
             }, # the rest is static. Yes, you need the meta dict

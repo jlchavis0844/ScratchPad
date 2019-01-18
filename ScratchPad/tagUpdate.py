@@ -70,8 +70,8 @@ def duplicateTagCheck(APItags, currTag):
 # Setup for the file picker
 FILEOPENOPTIONS = dict(defaultextension='.csv', filetypes=[('CSV file', '*.csv'), ('All files', '*.*')])
 time = datetime.now().strftime('%Y-%m-%d_%H%M%S')  # get time stamp for the log writing.
-path = os.path.dirname(__file__)  # get current path
-
+#path = os.path.dirname(__file__)  # get current path
+path = 'H:\\'
 # load in the API token, for security, the token is saved as plain text locally in the NOE folder
 token = getToken()
 
@@ -153,6 +153,8 @@ with open(csv_path, encoding="utf8", newline='', errors = 'ignore') as csvfile: 
         tagStr = tagStr.replace(",]", "]") # replace "Tag", , "tag2" with "Tag", "tag2"
         tagStr = tagStr.replace("[,", "[") # replace "Tag", , "tag2" with "Tag", "tag2"
         # tagStr = tagStr + ']\n\t}\n}'
+#         tagStr = tagStr.replace("[",'[\n')
+#         tagStr = tagStr.replace("]",'\n]')
         file.write("local tags: " + tagStr + '\n')
         
         # not that the tag has been read, downloaded, combined, and built, let's send it
@@ -162,6 +164,7 @@ with open(csv_path, encoding="utf8", newline='', errors = 'ignore') as csvfile: 
         response = requests.put(url=url, headers=headers,data=tagStr, verify=True)
         if(response.status_code != 200):
             writeAndQuit(response, file)
+            continue
         response_json = json.loads(response.text)
         
         file.write("for " + row[0] + " , response code: " + str(response.status_code) + '\n')

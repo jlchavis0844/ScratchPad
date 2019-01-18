@@ -118,8 +118,8 @@ def duplicateTagCheck(APItags, currTag):
 # Setup for the file picker
 FILEOPENOPTIONS = dict(defaultextension='.csv', filetypes=[('CSV file', '*.csv'), ('All files', '*.*')])
 time = datetime.now().strftime('%Y-%m-%d_%H%M%S')  # get time stamp for the log writing.
-path = os.path.dirname(__file__)  # get current path
-
+#path = os.path.dirname(__file__)  # get current path
+path = 'H:\\'
 # load in the API token, for security, the token is saved as plain text locontacty in the NOE folder
 token = getToken()
 

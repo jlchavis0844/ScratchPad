@@ -413,6 +413,8 @@ for currID in oldBaseIDs:
         data['data']['owner_id'] = ownerID # set the owner to choosen ID
         data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
         data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
+        data['data']['status'] = "Incoming" # set to incoming
+        
         
         # delete fields that aren't used on create
         del data['meta'] # metadata about the lead
@@ -426,13 +428,15 @@ for currID in oldBaseIDs:
         del data['data']['is_organization']
         del data['data']['name']
         del data['data']['tags']
+        del data['data']['parent_organization_id']
         
-        if ((data['data']['mobile'] != "" and data['data']['mobile'] is not None) or
-            (data['data']['custom_fields']['Home Phone'] != "" and 
-             data['data']['custom_fields']['Home Phone'] is not None)):
-            tagList = []
-            tagList.append('M/H Phone')
-            data['data']['tags'] = tagList
+        if 'Home Phone' in data['data'] and 'mobile' in data['data']:
+            if ((data['data']['mobile'] != "" and data['data']['mobile'] is not None) or
+                (data['data']['custom_fields']['Home Phone'] != "" and 
+                 data['data']['custom_fields']['Home Phone'] is not None)):
+                tagList = []
+                tagList.append('M/H Phone')
+                data['data']['tags'] = tagList
 #         tagList = data['data']['tags']
 #         tagList.append('OTJT')
 #         data['data']['tags'] = tagList

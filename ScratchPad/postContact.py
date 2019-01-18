@@ -1,5 +1,4 @@
 '''
-Created on Nov 11, 2016
 Added token file implementation
 Added Local token, checks C:\Apps before doing to the network
 Added Tag reading on column 41 , row[40] - 12/7/2016
