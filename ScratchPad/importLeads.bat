@@ -1,1 +1,0 @@
-python \\nas3\users\JChavis\Documents\Projects\ScratchPad\importLeads.py
