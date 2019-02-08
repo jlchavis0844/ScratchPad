@@ -40,8 +40,9 @@ print (len(list(csvFile)))
 for col in csvFile: #check for peasant columns
     value_counts = csvFile[col].count()
     if value_counts < 10:
-        #print('deleting ' + col)
-        del csvFile[col]
+        print('deleting ' + col)
+        #del csvFile[col] #causing memory error
+        csvFile.drop(col, 1, inplace = True)
         
 print (len(list(csvFile)))
 

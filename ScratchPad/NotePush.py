@@ -6,8 +6,8 @@ Created on Mar 15, 2017
 Quick program to push a new note to the contact. To expanded later
 The CSV file should be outlined as such...
 
-NOTE: the content protion of the CSV should contain char(10) {char(13) optional} and not \n
-python will auto escape \n to \\n. Why not let it convert char(10) to \n for you?
+NOTE: the content portion of the CSV should contain char(10) {char(13) optional} and not \n
+Python will auto escape \n to \\n. Why not let it convert char(10) to \n for you?
 
 ContactID    Type    Content
 1223456      lead    This is the note content
@@ -25,7 +25,7 @@ from datetime import datetime  # for comparing time stamps
 #This function will check for a text file called token which holds the Base API Token in plain text
 # this token will be loaded, read, and stored as the token variable that is returned
 # the function will read this computer's name and then check the network shared drive locations
-#     \\NAME\now\token
+#     \\NAME\noe\token
 #     \\NAME\Noe
 # If the file is not located, a file picker will be loaded for the user to find the token file.
 def getToken():
