@@ -284,7 +284,7 @@ def makeItSo():
             #let's go through each deal found with the following steps
             #-check if the deal is won (4517462). If won, break loop and go to next contact
             #-delete the lead. if delete fails, break loop and go to next contact
-            lostIDs = [4517464, 5520031, 5353324, 5353325] # only for 'lost' deals
+            lostIDs = [4517464, 5520031, 5353324, 5353325, 8227083] # only for 'lost' deals
             for currDeal in dealData['items']:
                 dealFlag = False
                 print("Stage of this deal = " + str(currDeal['data']['stage_id']))
@@ -324,7 +324,7 @@ def makeItSo():
             #data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
             data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
             
-            if data['data']['custom_fields']['New Lead Type'] is not None:
+            if 'New Lead Type' in data['data']['custom_fields']:
                 if "TDS-A" in data['data']['custom_fields']['New Lead Type']:
                     data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead"
                 elif data['data']['custom_fields']['New Lead Type'] == "A Lead":

@@ -19,16 +19,16 @@ full command line support, use -h or --help for options.
 
 List of future updates (prefix out for tracking) 
 @todo:DONE 2-14-2017 add proper input checking for numeric, etc
-@todo: exception handling on all reads
+@todo:     exception handling on all reads
 @todo:Done add command line arguments to set veriables 
 @todo:Done option to hold open console on compltion.
 @todo:Done option to skip GUI 
-@todo: exception handling on all request calls
-@todo: convert simple text dump of json to CSV export?
+@todo:     exception handling on all request calls
+@todo:     convert simple text dump of json to CSV export?
 @todo:Done look into resource cleanup of file and reader.
-@todo: remove redundant token searching paths
+@todo:     remove redundant token searching paths
 @todo:Done add custom log file pathing
-@todo: add log copy to shared log repository
+@todo:     add log copy to shared log repository
 
 2/1/2017 - started
 2/13/2017 - Finished core functionality with minimum error checking, no
@@ -335,18 +335,21 @@ def startProgram():
             
 #NEW LEAD TYPE GOES HERE!!!!!!!!!!!!!!!!
             #data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
-            #data['data']['custom_fields']['New Lead Type'] = "TDS-A Lead" 
+            data['data']['custom_fields']['New Lead Type'] = "A Lead" 
             
-            if(data['data']['custom_fields']['New Lead Type'] != None and \
-               "TDS" in data['data']['custom_fields']['New Lead Type']):
-                data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead"
-            else:
-                data['data']['custom_fields']['New Lead Type'] = "B Lead"
+#             if('New Lead Type' in data['data']['custom_fields'] \
+#                and data['data']['custom_fields']['New Lead Type'] != None and \
+#                "TDS" in data['data']['custom_fields']['New Lead Type']):
+#                 data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead"
+#             else:
+#                 data['data']['custom_fields']['New Lead Type'] = "B Lead"
             
             data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
             
     #CHANGE STATUS TO INCOMMING
             data['data']['status'] = "Incoming"
+            
+    
     
             # delete fields that aren't used on create
             del data['meta'] # metadata about the lead
@@ -372,7 +375,7 @@ def startProgram():
             #ENSURE TDS IS YES
             data['data']['custom_fields']['TDS'] = 'Yes'
             
-            if "unqualified_reason_id" in data:
+            if "unqualified_reason_id" in data['data']:
                 del data['data']['unqualified_reason_id']
             
             # let's delete the lead
@@ -393,6 +396,7 @@ def startProgram():
             if response.status_code != 200:
                 print("something went wrong creating a lead, got status code " + str(response.status_code) + '\n')
                 file.write("something went wrong creating a lead, got status code " + str(response.status_code)+ '\n')
+                file.write(json.dumps(data))
                 failed += 1
                 rowCntr += 1 # ready to move to the next row
                 print(json.dumps(data))

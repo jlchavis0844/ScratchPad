@@ -9,7 +9,7 @@ id numbers in a csv of this format:
     |   id    |
     | 1234567 |
     |76543210 |
-
+    
 '''
 
 import datetime  # for comparing time stamps
@@ -41,7 +41,6 @@ parser.add_argument('--wait', '-w', dest='wait', \
 
 # fetch args into namespace so we can call args.argName
 args = parser.parse_args() 
-
 
 def getSource(sourceName):
     """serves as a getter for source that reads sources by the key and 

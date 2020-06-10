@@ -188,6 +188,7 @@ if(csv_path is None or csv_path == ""):  # if the file picker is closed
 file = open(path + '\\logs\\importLog' + time + '.txt', 'w+')  # create and open the log file for this session
 file.write("starting leads import at " + time + '\n')  # write to log
 file.write("using CSV: " + csv_path + '\n')
+leadsCreated = {}
 
 with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  # open file as UTF-8
     reader = csv.reader(csvfile, delimiter=',')  # makes the file a csv reader
@@ -209,12 +210,13 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
         
         
         #Lets load the CSV values into JSON objects data, address, or custom
+        clientName = row[3] + ", " + row[2]
         data["email"] = row[10]  # each column is mapped to a json object 
         data["source_id"] = getSource(row[1])
         custom_fields["Our Region"] = row[35]
         custom_fields["TDS"] = row[34]
         custom_fields["Territory"] = row[11]
-        data["owner_id"] = getOwner(row[0])
+        data["owner_id"] = getOwner(row[0].strip())
         data["first_name"] = row[2]
         data["last_name"] = row[3]
         address["line1"] = row[4]
@@ -328,6 +330,8 @@ with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  #
             newBaseID = response_json['data']['id']
             print('Base ID: ' + str(newBaseID) + '\n')
             file.write('Base ID: ' + str(newBaseID) + '\n')
+            leadsCreated[newBaseID] = clientName
             
+file.write(json.dumps(leadsCreated))            
 file.close
 input("press Enter key to continue") # pause at the end of running the program to allow for reading

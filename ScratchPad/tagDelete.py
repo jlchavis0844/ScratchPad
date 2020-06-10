@@ -114,7 +114,7 @@ with open(csv_path, encoding="utf8", newline='', errors = 'ignore') as csvfile: 
         file.write('found the following tags online: ' + str(APItags) + '\n')
         
 #HERE WE CHANGE TAGS ARRAY###############################################
-        remStr = r'M/H Phone'
+        remStr = r'OTJT'
         if remStr in APItags:
             APItags.remove(remStr)
         print("removed " + remStr + ", now: " + str(APItags) + '\n')

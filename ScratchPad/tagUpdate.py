@@ -1,6 +1,6 @@
 '''
 Created on Dec 22, 2016
-This module will update add, not replace, the users tags
+This module will add, not replace, the users tags
 The module will read in a CSV info in the following order:
     Type : contacts or Leads **must be plural
     id : Base ID for lead or contact
