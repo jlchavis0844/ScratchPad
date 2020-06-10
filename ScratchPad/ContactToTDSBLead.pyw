@@ -14,17 +14,17 @@ full command line support, use -h or --help for options.
 
 List of future updates (prefix out for tracking) 
 @todo:DONE 2-14-2017 add proper input checking for numeric, etc
-@todo: exception handling on all reads
+@todo:     exception handling on all reads
 @todo:Done add command line arguments to set variables 
 @todo:Done option to hold open console on c.
 @todo:Done option to skip GUI 
-@todo: exception handling on all request calls
-@todo: Seriously, get grequests for multithreading working.
-@todo: convert simple text dump of json to CSV export?
+@todo:     exception handling on all request calls
+@todo:     Seriously, get grequests for multithreading working.
+@todo:     convert simple text dump of json to CSV export?
 @todo:Done look into resource cleanup of file and reader.
-@todo: remove redundant token searching paths
+@todo:     remove redundant token searching paths
 @todo:Done add custom log file pathing
-@todo: add log copy to shared log repository
+@todo:     add log copy to shared log repository
 
 2/1/2017 - started
 2/13/2017 - Finished core functionality with minimum error checking, no correction, no note transfer
@@ -40,33 +40,62 @@ import tkinter
 #import grequests # can't use because of dependency failing
 
 owners = {} #loaded at start from csv during the GUI build
+token = ''
 
 #take care of our command line arguments
 parser = argparse.ArgumentParser(description='Handle commandline options') # build parser
-parser.add_argument('--owner','-o', dest='owner', help="Optional owner flag", required=False) # owner arg
-parser.add_argument('--file', '-f', dest='file', help="file CSV to process", required=False) # CSV file argument
-parser.add_argument('--logdir', '-l', dest='logdir', help="directory to store logs in", required=False) # log file directory
-parser.add_argument('--wait', '-w', dest='wait', help="No means the program closes after running, else, it waits for key", required=False) # wait arg
+parser.add_argument('--owner','-o', dest='owner', 
+                    help="Optional owner flag", required=False) # owner arg
+parser.add_argument('--file', '-f', dest='file', 
+                    help="file CSV to process", required=False) # CSV file argument
+parser.add_argument('--logdir', '-l', dest='logdir', 
+                    help="directory to store logs in", required=False) # log file directory
+parser.add_argument('--wait', '-w', dest='wait', 
+                    help="No means the program closes after running, else, it waits for key", required=False) # wait arg
 args = parser.parse_args() # fetch args into namespace so we can call args.argName
 
+# def loadOwners():
+#     global owners
+#     if os.path.isfile("./owners.csv"):
+#         myFile = ".\\owners.csv"
+#     else:
+#         myFile = "\\\\nas3\\users\\jchavis\\Documents\\LeadRefreshes\\"
+#         
+#     with open(myFile, encoding="utf8", newline='', errors='ignore') as csvfile:
+#         readCSV = csv.reader(csvfile, delimiter = ',')
+#         cntr = 0
+#         owners = {}
+#         
+#         for row in readCSV:
+#             if cntr != 0:
+#                 owners[row[0].strip()] = int(row[1])
+#                 cntr += 1
+#             else:
+#                 cntr += 1
+#     return owners
+
+# loads a dict of available owners in the following format {"James Chavis" : 123456789}
+# loads into owners
 def loadOwners():
+    global token
     global owners
-    if os.path.isfile("./owners.csv"):
-        myFile = ".\\owners.csv"
-    else:
-        myFile = "\\\\nas3\\users\\jchavis\\Documents\\LeadRefreshes\\"
-        
-    with open(myFile, encoding="utf8", newline='', errors='ignore') as csvfile:
-        readCSV = csv.reader(csvfile, delimiter = ',')
-        cntr = 0
-        owners = {}
-        
-        for row in readCSV:
-            if cntr != 0:
-                owners[row[0].strip()] = int(row[1])
-                cntr += 1
-            else:
-                cntr += 1
+    if token is None or token == '':
+        token = getToken()
+    
+    oheaders = {'Accept': 'application/json',
+                 'Content-Type': 'application/json',
+                 'Authorization': 'Bearer ' + token}
+    
+    oURL = 'https://api.getbase.com/v2/users?per_page=100&status=active'
+    oresponse = requests.get(url=oURL, headers=oheaders, verify = True)
+    oresponse_json = json.loads(oresponse.text)  # read in the response JSON
+    items = oresponse_json['items']
+    #owners = {}
+    
+    for item in items:
+        owners[item['data']['name']] = item['data']['id']
+        print(item['data']['id'])
+    
     return owners
 
 def setPath():
@@ -77,7 +106,6 @@ def setPath():
     csv_text.set(csv_path)
     errorMsg.set("") # clear and user error message and proper path loading
     return # go back
-
 
 #@todo: Fix the initial directory picker path to  \\nas3\users\ + os.getlogin() + \Documents\
 
@@ -169,6 +197,7 @@ def getToken():
 # this may be redundant, used on tkinter's option menu
 # maybe replace with *(owners.keys())
 # how do you dereference a returned dict in python
+token = getToken()
 newOwnerList = loadOwners().keys() 
 if newOwnerList is None:
     print("could not load owners.csv.\nMake one like:\nName, id {with header row}")
@@ -265,9 +294,9 @@ passed = 0 # track success
 
 # Now we open the CSV containing the id's of the contacts we are going to work with
 # The CSV should look something like below, read from column 0:
-# |   id   |
-# | 123654 |
-# | 446588 |
+    # |   id   |
+    # | 123654 |
+    # | 446588 |
 with open(csv_path, encoding="utf8", newline='', errors='ignore') as csvfile:  # open file as UTF-8
     reader = csv.reader(csvfile, delimiter=',')  # makes the file a csv reader
     rowCntr = -1  # start index, will track which row the process is on
@@ -352,66 +381,67 @@ for currID in oldBaseIDs:
 #             file.write("found " + str(noteData['meta']['count']) + " notes\n")     
         
 
-#         #now we have to check for any deals associated with this contact.
-#         #we make the assumption of there only being 1 page of deals (<= 100 deals)
-#         dealUrl = "https://api.getbase.com/v2/deals"
-#         dealParams = {"per_page": "100", "page":"1", "contact_id": str(currID)}
-#         dealResponse = requests.request("GET", dealUrl, data="", headers=headers, params=dealParams) # call it
-# 
-#         #error check for deal retrieval
-#         if dealResponse.status_code != 200:
-#             print("something went wrong getting deals, got status code " + str(dealResponse.status_code)) # error message
-#             file.write("something went wrong getting deals, got status code " + str(dealResponse.status_code) 
-#                 + " process will continue\n")
-#             failed += 1
-#             rowCntr += 1 # ready to move to the next row
-#             finished += 1
-#             continue # Skip this contact if the deal cannot be checked.
-# 
-#         dealData = json.loads(dealResponse.text) # load deal into json
-#         file.write('found ' + str(dealData['meta']['count']) + " deals\n") # track deal found in log
-# 
-#         #let's go through each deal found with the following steps
-#         #-check if the deal is lost (4517464, 5353325). If not, break loop and go to next contact
-#         #-delete the lead. if delete fails, break loop and go to next contact
-#         lostIDs = [5353325, 4517464] # only for 'lost'
-#         for currDeal in dealData['items']:
-#             dealFlag = False
-#             if currDeal['data']['stage_id'] not in lostIDs:
-#                 print('deal ' + str(currDeal['data']['id']) + ' is not lost for contact ' + str(currID) + '\n')
-#                 print('Skipping ' + str(currID))
-#                 file.write('deal ' + str(currDeal['data']['id']) + ' is not lost for contact ' + str(currID) + '\n')
-#                 file.write('Skipping ' + str(currID) + '\n')
-#                 failed += 1
-#                 rowCntr += 1 # ready to move to the next row
-#                 dealFag = True
-#                 break
-#             else: # delete the lead
-#                 ddURL = dealUrl + '/' + str(currDeal['data']['id'])
-#                 dealResponse = requests.request('DELETE', ddURL , data="", headers=headers, params="") # call it
-#                 if dealResponse.status_code != 204:
-#                     print('deal ' + str(currDeal['data']['id']) + ' was not deleted for contact ' + str(currID) + '\n')
-#                     print('Skipping ' + str(currID))
-#                     file.write('deal ' + str(currDeal['data']['id']) + ' was not deleted for contact ' + str(currID) + '\n')
-#                     file.write('Skipping ' + str(currID) + '\n')
-#                     failed += 1
-#                     rowCntr += 1 # ready to move to the next row
-#                     dealFag = True
-#                     break
-#                 else:
-#                     print('deal ' + str(currDeal['data']['id']) + ' was deleted for contact ' + str(currID) + '\n')
-#                     file.write('deal ' + str(currDeal['data']['id']) + ' was deleted for contact ' + str(currID) + '\n')
-#             
-#             # if an error with deal deletion happened, skip to next contact
-#             if dealFlag == True:
-#                 finished +=1
-#                 continue
-# 
-#         #End deal Loop
-
+        #now we have to check for any deals associated with this contact.
+        #we make the assumption of there only being 1 page of deals (<= 100 deals)
+        dealUrl = "https://api.getbase.com/v2/deals"
+        dealParams = {"per_page": "100", "page":"1", "contact_id": str(currID)}
+        dealResponse = requests.request("GET", dealUrl, data="", headers=headers, params=dealParams) # call it
+ 
+        #error check for deal retrieval
+        if dealResponse.status_code != 200:
+            print("something went wrong getting deals, got status code " + str(dealResponse.status_code)) # error message
+            file.write("something went wrong getting deals, got status code " + str(dealResponse.status_code) 
+                + " process will continue\n")
+            failed += 1
+            rowCntr += 1 # ready to move to the next row
+            finished += 1
+            continue # Skip this contact if the deal cannot be checked.
+ 
+        dealData = json.loads(dealResponse.text) # load deal into json
+        file.write('found ' + str(dealData['meta']['count']) + " deals\n") # track deal found in log
+ 
+        #let's go through each deal found with the following steps
+        #-check if the deal is lost (4517464, 5353325). If not, break loop and go to next contact
+        #-delete the lead. if delete fails, break loop and go to next contact
+        lostIDs = [5353325, 4517464] # only for 'lost'
+        for currDeal in dealData['items']:
+            dealFlag = False
+            if currDeal['data']['stage_id'] not in lostIDs:
+                print('deal ' + str(currDeal['data']['id']) + ' is not lost for contact ' + str(currID) + '\n')
+                print('Skipping ' + str(currID))
+                file.write('deal ' + str(currDeal['data']['id']) + ' is not lost for contact ' + str(currID) + '\n')
+                file.write('Skipping ' + str(currID) + '\n')
+                failed += 1
+                rowCntr += 1 # ready to move to the next row
+                dealFag = True
+                break
+            else: # delete the lead
+                ddURL = dealUrl + '/' + str(currDeal['data']['id'])
+                dealResponse = requests.request('DELETE', ddURL , data="", headers=headers, params="") # call it
+                if dealResponse.status_code != 204:
+                    print('deal ' + str(currDeal['data']['id']) + ' was not deleted for contact ' + str(currID) + '\n')
+                    print('Skipping ' + str(currID))
+                    file.write('deal ' + str(currDeal['data']['id']) + ' was not deleted for contact ' + str(currID) + '\n')
+                    file.write('Skipping ' + str(currID) + '\n')
+                    failed += 1
+                    rowCntr += 1 # ready to move to the next row
+                    dealFag = True
+                    break
+                else:
+                    print('deal ' + str(currDeal['data']['id']) + ' was deleted for contact ' + str(currID) + '\n')
+                    file.write('deal ' + str(currDeal['data']['id']) + ' was deleted for contact ' + str(currID) + '\n')
+             
+            # if an error with deal deletion happened, skip to next contact
+            if dealFlag == True:
+                finished +=1
+                continue
+ 
+        #End deal Loop
+#!!!!!!!!!!!!!!!-----LEAD CHANGE HERE ========!!!!!!!!!!!!!!!!
         # now we can change the info, and push it back to base as a B lead
         data['data']['owner_id'] = ownerID # set the owner to choosen ID
         data['data']['custom_fields']['New Lead Type'] = "TDS-B Lead" # change the lead type to B type
+        #data['data']['custom_fields']['New Lead Type'] = "A Lead" # change the lead type to B type
         data['data']['custom_fields']['StatusChange'] = today() # mark today as the date of the change to a B lead
         data['data']['status'] = "Incoming" # set to incoming
         
@@ -429,6 +459,8 @@ for currID in oldBaseIDs:
         del data['data']['name']
         del data['data']['tags']
         del data['data']['parent_organization_id']
+        del data['data']['billing_address']
+        del data['data']['shipping_address']
         
         if 'Home Phone' in data['data'] and 'mobile' in data['data']:
             if ((data['data']['mobile'] != "" and data['data']['mobile'] is not None) or
